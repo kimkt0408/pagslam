@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+    <node pkg="pagslam" type="inputNode" name="inputNode" output="screen">
+    </node>
+<!-- 
+    <node pkg="pagslam" type="inputNode_" name="inputNode" output="screen">
+    </node> -->
+
+    <!-- <node pkg="pagslam_gtodom" type="gtOdom" name="gtOdom" output="screen">
+    </node> -->
+</launch>

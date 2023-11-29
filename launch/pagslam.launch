@@ -1,0 +1,38 @@
+<launch>
+    <!-- (0)-1. Play rosbag files -->
+    <include file="$(find robot_setup_tf)/launch/rosbag_play_slam.launch" />
+    
+    <!-- (0)-2. Provide wheel odometry with noise -->
+    <!-- <node pkg="pagslam" type="noise_odometry.py" name="noise_odometry" output="screen" /> -->
+
+    <!-- (0)-3. Pagslam launch file -->
+    <include file="$(find pagslam_test)/launch/run.launch" />
+    
+    <!-- rviz -->
+    <arg name="rviz"   value="/home/kimkt0408/Desktop/IoT4Ag/rviz/icra23.rviz" />
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rviz)" />
+    <!-- (0)-2. Provide wheel odometry with noise -->
+    <!-- <node pkg="mapping" type="odom_noise.py" name="odom_noise" output="screen" /> -->
+
+
+    <!-- P-AgBot ver.1: One LiDAR (vertical) -->
+    <!-- (1) Feature extraction & SLAM -->
+    <!-- <node pkg="mapping" type="feature_extraction_noise" name="feature_extraction_noise" output="screen" /> -->
+    
+    <!-- (2) Plane extraction -->
+    <!-- <node pkg="mapping" type="plane_extraction_acre" name="plane_extraction_acre" output="screen" /> -->
+    
+
+    <!-- P-AgBot ver.2: Two LiDARs (horizontal: 1, vertical: 2) -->
+    <!-- (1) Feature extraction & SLAM -->
+    <!-- <node pkg="mapping" type="feature_extraction_noise2" name="feature_extraction_noise2" output="screen" /> -->
+    
+    <!-- (2) Plane extraction -->
+    <!-- <node pkg="mapping" type="plane_extraction1" name="plane_extraction1" output="screen" />
+    <node pkg="mapping" type="plane_extraction2" name="plane_extraction2" output="screen" /> -->
+    
+
+    <!-- TF: between base_link to velodyne -->
+    <!-- <node pkg="tf2_ros" type="static_transform_publisher" name="base_to_velodyne1" args="-0.155 0 0.402 -3.141592653 0 0 base_link velodyne1" />
+    <node pkg="tf2_ros" type="static_transform_publisher" name="base_to_velodyne2" args="-0.266 0 0.292 1.570796327 0 -1.570796327 base_link velodyne2" /> -->
+</launch>
