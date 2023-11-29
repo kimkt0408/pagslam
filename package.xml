@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>pagslam</name>
+  <version>0.0.0</version>
+  <description>The pagslam package</description>
+
+  <maintainer email="kim3686@purdue.edu">kim3686</maintainer>
+  
+  <license>TODO</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <depend>pcl_ros</depend>
+  <depend>pcl_conversions</depend>
+  <depend>sensor_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>tf2_ros</depend>
+  <depend>tf2_eigen</depend>
+  <depend>tf2</depend>
+  <depend>tf</depend>
+  <depend>nodelet</depend>
+  
+  <depend>Eigen</depend>
+  <depend>ceres</depend>
+  
+  <!-- The export tag contains other, unspecified, tags -->
+  <!-- <export>
+   <nodelet plugin="${prefix}/nodelet_plugins.xml" />
+  </export> -->
+</package>
+

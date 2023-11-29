@@ -1,0 +1,28 @@
+<launch>
+    <!-- Play rosbag files -->
+    <include file="$(find robot_setup_tf)/launch/rosbag_play_slam.launch" />
+    
+    <!-- 0. Noisy -->
+    <!-- <node pkg="pagslam" type="noise_odometry.py" name="noise_odometry" output="screen" /> -->
+
+    <!-- 1. P-AgSLAM / gt -->
+    <include file="$(find pagslam)/launch/run_.launch" />
+    
+    <!-- 2. Full-ICP -->
+    <!-- <include file="$(find icp_slam)/launch/run_baseline.launch" /> -->
+
+    <!-- 3. LOAM -->
+    <!-- <include file="$(find loam_ouster)/launch/run_baseline.launch" /> -->
+
+    <!-- 4. LeGO-LOAM -->
+    <!-- <include file="$(find lego_loam)/launch/run_baseline.launch" /> -->
+
+    <!-- 5. LIO-SAM -->
+    <!-- <include file="$(find lio_sam)/launch/run_baseline.launch" /> -->
+
+    <!-- rviz -->
+    <!-- <arg name="rviz" value="/home/kimkt0408/rviz/gps_localization_.rviz" /> -->
+    <!-- <arg name="rviz" value="/home/kimkt0408/catkin_ws/src/pagslam/pagslam_baseline.rviz" /> -->
+    <!-- <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rviz)" /> -->
+    
+</launch>
