@@ -76,9 +76,9 @@ generate_messages(
   std_msgs
 )
 
-catkin_package(
-  CATKIN_DEPENDS message_runtime std_msgs
-)
+# catkin_package(
+#   CATKIN_DEPENDS message_runtime std_msgs
+# )
 
 
 ## Generate messages in the 'msg' folder
@@ -137,12 +137,12 @@ catkin_package(
 ## LIBRARIES: libraries you create in this project that dependent projects also need
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
-# catkin_package(
-# #  INCLUDE_DIRS include
-# # LIBRARIES pagslam
-# #  CATKIN_DEPENDS roscpp rospy std_msgs
-# #  DEPENDS system_lib
-# )
+catkin_package(
+#  INCLUDE_DIRS include
+# LIBRARIES pagslam
+#  CATKIN_DEPENDS roscpp rospy std_msgs
+#  DEPENDS system_lib
+)
 
 
 # catkin_package(INCLUDE_DIRS

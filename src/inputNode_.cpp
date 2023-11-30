@@ -257,7 +257,8 @@ bool InputManager::Run()
 bool InputManager::callPAGSLAM(SE3 relativeMotion, StampedSE3 odom)
 {
     CloudT::Ptr h_cloud(new CloudT);
-    CloudT::Ptr v_cloud(new CloudT);
+    // CloudT::Ptr v_cloud(new CloudT);
+    depth_clustering::PointCloudArray::Ptr v_cloud(new depth_clustering::PointCloudArray);
 
     auto r = FindPC(odom.stamp, h_cloud, v_cloud);
 
@@ -266,7 +267,8 @@ bool InputManager::callPAGSLAM(SE3 relativeMotion, StampedSE3 odom)
         SE3 keyPose = SE3();
         SE3 prevKeyPose = firstOdom_ ? SE3() : keyPoses_[keyPoses_.size() - 1];
         pcl_conversions::toPCL(odom.stamp, h_cloud->header.stamp);
-        pcl_conversions::toPCL(odom.stamp, v_cloud->header.stamp);
+        // pcl_conversions::toPCL(odom.stamp, v_cloud->header.stamp);
+        pcl_conversions::toPCL(odom.stamp, v_cloud->cloud_array[0].header.stamp);
 
         // std::cout << "prevKeyPose matrix:\n" << prevKeyPose.matrix() << std::endl;
         // std::cout << "relativeMotion matrix:\n" << relativeMotion.matrix() << std::endl;
@@ -304,16 +306,17 @@ int InputManager::FindPC(const ros::Time stamp, CloudT::Ptr h_cloud, CloudT::Ptr
             return CLOUD_TOO_NEW;
         }
         else{
-            if (v_pcQueue_.front()->header.stamp.toSec() < stamp.toSec() - maxTimeDifference_){
+            if (v_pcQueue_.front()->cloud_array[0].header.stamp.toSec() < stamp.toSec() - maxTimeDifference_){
                 // ROS_DEBUG_STREAM("V_PCLOUD MSG TOO OLD");
                 v_pcQueue_.pop();
             }
-            else if (v_pcQueue_.front()->header.stamp.toSec() > stamp.toSec() + maxTimeDifference_){
+            else if (v_pcQueue_.front()->cloud_array[0].header.stamp.toSec() > stamp.toSec() + maxTimeDifference_){
                 // ROS_DEBUG_STREAM("V_PCLOUD MSG TOO NEW");
                 return CLOUD_TOO_NEW;
             }
             else{
-                ROS_DEBUG_STREAM("Calling PAGSLAM:\n h_cloud: " << h_pcQueue_.front()->header.stamp.toSec() << "\n v_cloud: " << v_pcQueue_.front()->header.stamp.toSec() << "\n odom:" << stamp.toSec());
+                // ROS_DEBUG_STREAM("Calling PAGSLAM:\n h_cloud: " << h_pcQueue_.front()->header.stamp.toSec() << "\n v_cloud: " << v_pcQueue_.front()->header.stamp.toSec() << "\n odom:" << stamp.toSec());
+                ROS_DEBUG_STREAM("Calling PAGSLAM:\n h_cloud: " << h_pcQueue_.front()->header.stamp.toSec() << "\n v_cloud: " << v_pcQueue_.front()->cloud_array[0].header.stamp.toSec() << "\n odom:" << stamp.toSec());
                 
                 pcl::fromROSMsg(*h_pcQueue_.front(), *h_cloud);
                 h_pcQueue_.pop();
@@ -324,6 +327,27 @@ int InputManager::FindPC(const ros::Time stamp, CloudT::Ptr h_cloud, CloudT::Ptr
                 return CLOUD_FOUND;
             }
         }
+        // else{
+        //     if (v_pcQueue_.front()->header.stamp.toSec() < stamp.toSec() - maxTimeDifference_){
+        //         // ROS_DEBUG_STREAM("V_PCLOUD MSG TOO OLD");
+        //         v_pcQueue_.pop();
+        //     }
+        //     else if (v_pcQueue_.front()->header.stamp.toSec() > stamp.toSec() + maxTimeDifference_){
+        //         // ROS_DEBUG_STREAM("V_PCLOUD MSG TOO NEW");
+        //         return CLOUD_TOO_NEW;
+        //     }
+        //     else{
+        //         ROS_DEBUG_STREAM("Calling PAGSLAM:\n h_cloud: " << h_pcQueue_.front()->header.stamp.toSec() << "\n v_cloud: " << v_pcQueue_.front()->header.stamp.toSec() << "\n odom:" << stamp.toSec());
+                
+        //         pcl::fromROSMsg(*h_pcQueue_.front(), *h_cloud);
+        //         h_pcQueue_.pop();
+
+        //         pcl::fromROSMsg(*v_pcQueue_.front(), *v_cloud);
+        //         v_pcQueue_.pop();
+
+        //         return CLOUD_FOUND;
+        //     }
+        // }
     }
     return CLOUD_TOO_OLD;
 }
