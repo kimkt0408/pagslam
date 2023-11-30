@@ -58,7 +58,8 @@ class InputManager
         ros::Subscriber v_PCSub_;
 
         std::queue<sensor_msgs::PointCloud2ConstPtr> h_pcQueue_;    
-        std::queue<sensor_msgs::PointCloud2ConstPtr> v_pcQueue_; 
+        // std::queue<sensor_msgs::PointCloud2ConstPtr> v_pcQueue_;  
+        std::queue<depth_clustering::PointCloudArrayConstPtr> v_pcQueue_; 
         std::deque<StampedSE3> odomQueue_;
 
         tf2_ros::Buffer tf_buffer_;

@@ -21,6 +21,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf2_eigen
   tf2
   tf
+  message_generation
 )
 
 find_package(Boost REQUIRED system serialization)
@@ -63,6 +64,22 @@ find_package(PCL 1.8 REQUIRED COMPONENTS common io segmentation search)
 ##     and list every .msg/.srv/.action file to be processed
 ##   * uncomment the generate_messages entry below
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
+
+add_message_files(
+  FILES
+  PointCloudArray.msg
+)
+
+generate_messages(
+  DEPENDENCIES
+  sensor_msgs
+  std_msgs
+)
+
+catkin_package(
+  CATKIN_DEPENDS message_runtime std_msgs
+)
+
 
 ## Generate messages in the 'msg' folder
 # add_message_files(
@@ -120,12 +137,12 @@ find_package(PCL 1.8 REQUIRED COMPONENTS common io segmentation search)
 ## LIBRARIES: libraries you create in this project that dependent projects also need
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
-catkin_package(
-#  INCLUDE_DIRS include
-# LIBRARIES pagslam
-#  CATKIN_DEPENDS roscpp rospy std_msgs
-#  DEPENDS system_lib
-)
+# catkin_package(
+# #  INCLUDE_DIRS include
+# # LIBRARIES pagslam
+# #  CATKIN_DEPENDS roscpp rospy std_msgs
+# #  DEPENDS system_lib
+# )
 
 
 # catkin_package(INCLUDE_DIRS
@@ -178,7 +195,6 @@ mapManager
 
 target_link_libraries(pagslamNode pagslam)
 target_link_libraries(pagslam ${CERES_LIBRARIES} Eigen3::Eigen Sophus::Sophus)
-
 
 
 # add_executable(icp src/icp.cpp)
