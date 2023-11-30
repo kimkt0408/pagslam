@@ -253,7 +253,7 @@ bool InputManager::callPAGSLAM(SE3 relativeMotion, StampedSE3 odom)
         SE3 prevKeyPose = firstOdom_ ? SE3() : keyPoses_[keyPoses_.size() - 1];
         pcl_conversions::toPCL(odom.stamp, h_cloud->header.stamp);
         pcl_conversions::toPCL(odom.stamp, v_cloud->header.stamp);
-
+        
         // std::cout << "prevKeyPose matrix:\n" << prevKeyPose.matrix() << std::endl;
         // std::cout << "relativeMotion matrix:\n" << relativeMotion.matrix() << std::endl;
 
