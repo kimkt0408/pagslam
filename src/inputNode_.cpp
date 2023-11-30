@@ -14,6 +14,8 @@
 #include <definitions.h>
 #include <pagslamNode.h>
 
+#include "depth_clustering/PointCloudArray.h"  // Replace with your actual package and message names
+
 enum
 {
     CLOUD_TOO_OLD,  // 0
@@ -31,7 +33,9 @@ class InputManager
     private:
         void OdomCb_(const nav_msgs::OdometryConstPtr &odom_msg);
         void h_PCCb_(const sensor_msgs::PointCloud2ConstPtr &h_cloudMsg);
-        void v_PCCb_(const sensor_msgs::PointCloud2ConstPtr &v_cloudMsg);
+        // void v_PCCb_(const sensor_msgs::PointCloud2ConstPtr &v_cloudMsg);
+        // void v_PCCb_(const sensor_msgs::PointCloud2ConstPtr &v_cloudMsg);
+        void v_PCCb_(const depth_clustering::PointCloudArrayConstPtr &v_cloudMsg);
 
         int FindPC(const ros::Time stamp, CloudT::Ptr h_cloud, CloudT::Ptr v_cloud);
         // bool callPAGSLAM(SE3 relativeMotion, ros::Time stamp);
@@ -119,8 +123,8 @@ InputManager::InputManager(ros::NodeHandle nh) : nh_(nh), tf_listener_{tf_buffer
 
     // (1) ACRE
     nh_.param<std::string>("h_cloud_topic", h_cloud_topic_, "/ns1/velodyne_points");
-    nh_.param<std::string>("v_cloud_topic", v_cloud_topic_, "/ns2/velodyne_points");
-    nh_.param<std::string>("v_cloud_topic", v_cloud_topic_, "/ns2/velodyne_points");
+    // nh_.param<std::string>("v_cloud_topic", v_cloud_topic_, "/ns2/velodyne_points");
+    nh_.param<std::string>("v_cloud_topic", v_cloud_topic_, "/depth_clustering/object_segments_cloud_array");
     nh_.param<std::string>("odom_topic", odom_topic_, "/odometry/filtered");
 
     // (2) Simulation
@@ -185,8 +189,16 @@ void InputManager::h_PCCb_(const sensor_msgs::PointCloud2ConstPtr &h_cloudMsg)
 }
 
 
-// (2) Vertical LiDAR
-void InputManager::v_PCCb_(const sensor_msgs::PointCloud2ConstPtr &v_cloudMsg)
+// (2) Vertical LiDAR -> Segmented Horizontal LiDAR
+// void InputManager::v_PCCb_(const sensor_msgs::PointCloud2ConstPtr &v_cloudMsg)
+// {
+//     v_pcQueue_.push(v_cloudMsg);
+//     if (v_pcQueue_.size() > maxQueueSize_){
+//         v_pcQueue_.pop();
+//     }
+// }
+
+void InputManager::v_PCCb_(const depth_clustering::PointCloudArrayConstPtr &v_cloudMsg)
 {
     v_pcQueue_.push(v_cloudMsg);
     if (v_pcQueue_.size() > maxQueueSize_){
