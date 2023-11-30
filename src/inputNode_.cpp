@@ -120,6 +120,7 @@ InputManager::InputManager(ros::NodeHandle nh) : nh_(nh), tf_listener_{tf_buffer
     // (1) ACRE
     nh_.param<std::string>("h_cloud_topic", h_cloud_topic_, "/ns1/velodyne_points");
     nh_.param<std::string>("v_cloud_topic", v_cloud_topic_, "/ns2/velodyne_points");
+    nh_.param<std::string>("v_cloud_topic", v_cloud_topic_, "/ns2/velodyne_points");
     nh_.param<std::string>("odom_topic", odom_topic_, "/odometry/filtered");
 
     // (2) Simulation
