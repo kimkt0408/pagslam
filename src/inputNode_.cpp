@@ -264,6 +264,7 @@ bool InputManager::callPAGSLAM(SE3 relativeMotion, StampedSE3 odom)
     depth_clustering::PointCloudArray::Ptr seg_h_cloud(new depth_clustering::PointCloudArray);
 
     // auto r = FindPC(odom.stamp, h_cloud, v_cloud);
+    cout << "*********************************" << endl;
     auto r = FindPC(odom.stamp, h_cloud, v_cloud, seg_h_cloud);
 
     if (r == CLOUD_FOUND){
@@ -329,7 +330,7 @@ int InputManager::FindPC(const ros::Time stamp, CloudT::Ptr h_cloud, CloudT::Ptr
                 //     return CLOUD_TOO_NEW;
                 // }
                 // else{
-                    cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
+                    cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!: " << seg_h_pcQueue_.front()->cloud_array[0].header.stamp.toSec() << " " << seg_h_pcQueue_.front()->cloud_array[1].header.stamp.toSec() << endl;
                     // ROS_DEBUG_STREAM("Calling PAGSLAM:\n h_cloud: " << h_pcQueue_.front()->header.stamp.toSec() << "\n v_cloud: " << v_pcQueue_.front()->header.stamp.toSec() << "\n odom:" << stamp.toSec());
                     ROS_DEBUG_STREAM("Calling PAGSLAM:\n h_cloud: " << h_pcQueue_.front()->header.stamp.toSec() << "\n v_cloud: " << v_pcQueue_.front()->header.stamp.toSec() << "\n seg_h_cloud: " << seg_h_pcQueue_.front()->cloud_array[0].header.stamp.toSec() << "\n odom:" << stamp.toSec());
                     
