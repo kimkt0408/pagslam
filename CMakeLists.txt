@@ -22,7 +22,17 @@ find_package(catkin REQUIRED COMPONENTS
   tf2
   tf
   message_generation
+
+  depth_clustering
+  message_runtime
 )
+
+# find_package(catkin REQUIRED COMPONENTS
+#   depth_clustering
+#   message_runtime
+# )
+
+
 
 find_package(Boost REQUIRED system serialization)
 find_package(Eigen3 REQUIRED)
@@ -65,15 +75,19 @@ find_package(PCL 1.8 REQUIRED COMPONENTS common io segmentation search)
 ##   * uncomment the generate_messages entry below
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
-add_message_files(
-  FILES
-  PointCloudArray.msg
-)
+# add_message_files(
+#   FILES
+#   PointCloudArray.msg
+# )
 
-generate_messages(
-  DEPENDENCIES
-  sensor_msgs
-  std_msgs
+# generate_messages(
+#   DEPENDENCIES
+#   sensor_msgs
+#   std_msgs
+# )
+
+catkin_package(
+  CATKIN_DEPENDS depth_clustering message_runtime
 )
 
 # catkin_package(

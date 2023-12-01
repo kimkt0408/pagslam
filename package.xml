@@ -22,9 +22,13 @@
   <depend>Eigen</depend>
   <depend>ceres</depend>
 
+  <depend>depth_clustering</depend>
+
   <build_depend>message_generation</build_depend>
-  <exec_depend>message_runtime</exec_depend>
   
+  <build_depend>message_runtime</build_depend>
+  <exec_depend>message_runtime</exec_depend>
+
   <!-- The export tag contains other, unspecified, tags -->
   <!-- <export>
    <nodelet plugin="${prefix}/nodelet_plugins.xml" />
