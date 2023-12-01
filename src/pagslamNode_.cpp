@@ -7,7 +7,7 @@ namespace pagslam
 {
     PAGSLAMNode::PAGSLAMNode(const ros::NodeHandle &nh) : nh_(nh)
     {
-        debugMode_ = nh_.param("debug_mode", false);
+        debugMode_ = nh_.param("debug_mode", true);
 
         if (debugMode_){
             ROS_DEBUG_STREAM("Running PAGSLAM in Debug Mode" << std::endl);

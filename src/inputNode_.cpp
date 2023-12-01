@@ -213,7 +213,8 @@ void InputManager::seg_h_PCCb_(const depth_clustering::PointCloudArrayConstPtr &
 
 bool InputManager::Run()
 {
-    if (odomQueue_.empty() || h_pcQueue_.empty() || v_pcQueue_.empty()){
+    // if (odomQueue_.empty() || h_pcQueue_.empty() || v_pcQueue_.empty()){
+    if (odomQueue_.empty() || h_pcQueue_.empty() || v_pcQueue_.empty() || seg_h_pcQueue_.empty()){
         return false;
     }
 
@@ -264,7 +265,6 @@ bool InputManager::callPAGSLAM(SE3 relativeMotion, StampedSE3 odom)
     depth_clustering::PointCloudArray::Ptr seg_h_cloud(new depth_clustering::PointCloudArray);
 
     // auto r = FindPC(odom.stamp, h_cloud, v_cloud);
-    cout << "*********************************" << endl;
     auto r = FindPC(odom.stamp, h_cloud, v_cloud, seg_h_cloud);
 
     if (r == CLOUD_FOUND){
@@ -297,42 +297,49 @@ bool InputManager::callPAGSLAM(SE3 relativeMotion, StampedSE3 odom)
 
 // int InputManager::FindPC(const ros::Time stamp, CloudT::Ptr h_cloud, CloudT::Ptr v_cloud)
 int InputManager::FindPC(const ros::Time stamp, CloudT::Ptr h_cloud, CloudT::Ptr v_cloud, depth_clustering::PointCloudArray::Ptr seg_h_cloud)
-{
-    if (h_pcQueue_.empty() || v_pcQueue_.empty()){
+{   
+    cout << "SIZE: " << h_pcQueue_.size() << " " << v_pcQueue_.size() << " " << seg_h_pcQueue_.size() << endl;
+
+    // if (h_pcQueue_.empty() || v_pcQueue_.empty()){
+    if (h_pcQueue_.empty() || v_pcQueue_.empty() || seg_h_pcQueue_.empty()){
         return false;
     }
         
-    while (!h_pcQueue_.empty() && !v_pcQueue_.empty()){
+    while (!h_pcQueue_.empty() && !v_pcQueue_.empty() && !seg_h_pcQueue_.empty()){
         if (h_pcQueue_.front()->header.stamp.toSec() < stamp.toSec() - maxTimeDifference_){
-            // ROS_DEBUG_STREAM("H_PCLOUD MSG TOO OLD");
+            ROS_DEBUG_STREAM("H_PCLOUD MSG TOO OLD " << h_pcQueue_.front()->header.stamp.toSec() << " " << stamp.toSec());
             h_pcQueue_.pop();
         }
         else if (h_pcQueue_.front()->header.stamp.toSec() > stamp.toSec() + maxTimeDifference_){
-            // ROS_DEBUG_STREAM("H_PCLOUD MSG TOO NEW");
+            ROS_DEBUG_STREAM("H_PCLOUD MSG TOO NEW " << h_pcQueue_.front()->header.stamp.toSec() << " " << stamp.toSec());
             return CLOUD_TOO_NEW;
         }
         else{
             if (v_pcQueue_.front()->header.stamp.toSec() < stamp.toSec() - maxTimeDifference_){
-                // ROS_DEBUG_STREAM("V_PCLOUD MSG TOO OLD");
+                ROS_DEBUG_STREAM("V_PCLOUD MSG TOO OLD " << v_pcQueue_.front()->header.stamp.toSec() << " " << stamp.toSec());
                 v_pcQueue_.pop();
             }
             else if (v_pcQueue_.front()->header.stamp.toSec() > stamp.toSec() + maxTimeDifference_){
-                // ROS_DEBUG_STREAM("V_PCLOUD MSG TOO NEW");
+                ROS_DEBUG_STREAM("V_PCLOUD MSG TOO NEW " << v_pcQueue_.front()->header.stamp.toSec() << " " << stamp.toSec());
                 return CLOUD_TOO_NEW;
             }
             else{   
-                // if (seg_h_pcQueue_.front()->cloud_array[0].header.stamp.toSec() < stamp.toSec() - maxTimeDifference_){
-                //     // ROS_DEBUG_STREAM("H_PCLOUD MSG TOO OLD");
-                //     seg_h_pcQueue_.pop();
-                // }
-                // else if (seg_h_pcQueue_.front()->cloud_array[0].header.stamp.toSec() > stamp.toSec() + maxTimeDifference_){
-                //     // ROS_DEBUG_STREAM("H_PCLOUD MSG TOO NEW");
-                //     return CLOUD_TOO_NEW;
-                // }
-                // else{
-                    cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!: " << seg_h_pcQueue_.front()->cloud_array[0].header.stamp.toSec() << " " << seg_h_pcQueue_.front()->cloud_array[1].header.stamp.toSec() << endl;
+                if (seg_h_pcQueue_.front()->cloud_array[0].header.stamp.toSec() < stamp.toSec() - maxTimeDifference_){
+                    ROS_DEBUG_STREAM("SEG_H_PCLOUD MSG TOO OLD " << seg_h_pcQueue_.front()->cloud_array[0].header.stamp.toSec() << " " << stamp.toSec());
+                    seg_h_pcQueue_.pop();
+                }
+                else if (seg_h_pcQueue_.front()->cloud_array[0].header.stamp.toSec() > stamp.toSec() + maxTimeDifference_){
+                    ROS_DEBUG_STREAM("SEG_H_PCLOUD MSG TOO NEW " << seg_h_pcQueue_.front()->cloud_array[0].header.stamp.toSec() << " " << stamp.toSec());
+                    return CLOUD_TOO_NEW;
+                }
+                else{
+                    // cout << "1Calling PAGSLAM:\n h_cloud: " << h_pcQueue_.front()->header.stamp.toSec() << "\n v_cloud: " << v_pcQueue_.front()->header.stamp.toSec() << "\n odom:" << stamp.toSec() << endl;
+                    // cout << "******************************" << endl;
+                    // cout << "2Calling PAGSLAM:\n h_cloud: " << h_pcQueue_.front()->header.stamp.toSec() << "\n v_cloud: " << v_pcQueue_.front()->header.stamp.toSec() << "\n seg_h_cloud: " << seg_h_pcQueue_.front()->cloud_array[0].header.stamp.toSec() << "\n odom:" << stamp.toSec() << endl;
+                    
+                    // cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!: " << seg_h_pcQueue_.front()->cloud_array[0].header.stamp.toSec() << " " << seg_h_pcQueue_.front()->cloud_array[1].header.stamp.toSec() << endl;
                     // ROS_DEBUG_STREAM("Calling PAGSLAM:\n h_cloud: " << h_pcQueue_.front()->header.stamp.toSec() << "\n v_cloud: " << v_pcQueue_.front()->header.stamp.toSec() << "\n odom:" << stamp.toSec());
-                    ROS_DEBUG_STREAM("Calling PAGSLAM:\n h_cloud: " << h_pcQueue_.front()->header.stamp.toSec() << "\n v_cloud: " << v_pcQueue_.front()->header.stamp.toSec() << "\n seg_h_cloud: " << seg_h_pcQueue_.front()->cloud_array[0].header.stamp.toSec() << "\n odom:" << stamp.toSec());
+                    // ROS_DEBUG_STREAM("Calling PAGSLAM:\n h_cloud: " << h_pcQueue_.front()->header.stamp.toSec() << "\n v_cloud: " << v_pcQueue_.front()->header.stamp.toSec() << "\n seg_h_cloud: " << seg_h_pcQueue_.front()->cloud_array[0].header.stamp.toSec() << "\n odom:" << stamp.toSec());
                     
                     pcl::fromROSMsg(*h_pcQueue_.front(), *h_cloud);
                     h_pcQueue_.pop();
@@ -349,7 +356,7 @@ int InputManager::FindPC(const ros::Time stamp, CloudT::Ptr h_cloud, CloudT::Ptr
                     // seg_h_pcQueue_.pop();
 
                     return CLOUD_FOUND;
-                // }
+                }
                     
             }
             // else{
