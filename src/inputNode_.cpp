@@ -14,7 +14,7 @@
 #include <definitions.h>
 #include <pagslamNode.h>
 
-#include "depth_clustering/PointCloudArray.h"  // Replace with your actual package and message names
+#include "depth_clustering/PointCloudArray.h"  
 
 enum
 {
@@ -204,7 +204,7 @@ void InputManager::v_PCCb_(const sensor_msgs::PointCloud2ConstPtr &v_cloudMsg)
 
 void InputManager::seg_h_PCCb_(const depth_clustering::PointCloudArrayConstPtr &seg_h_cloudMsg)
 {   
-    if (seg_h_cloudMsg->cloud_array.size()){
+    if (seg_h_cloudMsg->cloud_array.size()){    // If segmented object does not exist
         seg_h_pcQueue_.push(seg_h_cloudMsg);
         if (seg_h_pcQueue_.size() > maxQueueSize_){
             seg_h_pcQueue_.pop();
@@ -275,12 +275,20 @@ bool InputManager::callPAGSLAM(SE3 relativeMotion, StampedSE3 odom)
         SE3 prevKeyPose = firstOdom_ ? SE3() : keyPoses_[keyPoses_.size() - 1];
         pcl_conversions::toPCL(odom.stamp, h_cloud->header.stamp);
         pcl_conversions::toPCL(odom.stamp, v_cloud->header.stamp);
-        // pcl_conversions::toPCL(odom.stamp, v_cloud->cloud_array[0].header.stamp);
+        
+        for (int i = 0; i < seg_h_cloud->cloud_array.size(); i++){
+            // cout << "Before" << i << " " << seg_h_cloud->cloud_array[i].header.stamp << << endl;
+            seg_h_cloud->cloud_array[i].header.stamp = odom.stamp;
+            // cout << "After " << i << " " << seg_h_cloud->cloud_array[i].header.stamp << endl;
+            // pcl_conversions::toPCL(odom.stamp, seg_h_cloud->cloud_array[i].header.stamp);
+        }
 
         // std::cout << "prevKeyPose matrix:\n" << prevKeyPose.matrix() << std::endl;
         // std::cout << "relativeMotion matrix:\n" << relativeMotion.matrix() << std::endl;
 
-        bool success_ = pagslam_->run(relativeMotion, prevKeyPose, h_cloud, v_cloud, odom, keyPose);
+        // bool success_ = pagslam_->run(relativeMotion, prevKeyPose, h_cloud, v_cloud, odom, keyPose);
+        bool success_ = pagslam_->run(relativeMotion, prevKeyPose, h_cloud, v_cloud, seg_h_cloud, odom, keyPose);
+
         if (success_){
             keyPoses_.push_back(keyPose);
             return true;

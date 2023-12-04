@@ -21,6 +21,7 @@
 #include <mapManager.h>
 #include <visualization_msgs/MarkerArray.h>
 
+#include "depth_clustering/PointCloudArray.h"  
 
 namespace pagslam
 {
@@ -38,7 +39,8 @@ namespace pagslam
             bool stalkExtraction(CloudT::Ptr& v_cloud, PagslamInput& pagslamIn);
             
             // bool run(const SE3 initialGuess, const SE3 prevKeyPose, CloudT::Ptr h_cloud, CloudT::Ptr v_cloud, ros::Time stamp, SE3 &outPose);
-            bool run(const SE3 initialGuess, const SE3 prevKeyPose, CloudT::Ptr h_cloud, CloudT::Ptr v_cloud, StampedSE3 odom, SE3 &outPose);
+            bool run(const SE3 initialGuess, const SE3 prevKeyPose, CloudT::Ptr h_cloud, CloudT::Ptr v_cloud, depth_clustering::PointCloudArray::Ptr seg_h_cloud, StampedSE3 odom, SE3 &outPose);
+            
             bool transformFrame(const std::string source_frame, const std::string target_frame, tf2::Transform& tf_sourceToTarget_);
             void groundPlaneVisualization(const pcl::ModelCoefficients::Ptr groundCoefficients);
             visualization_msgs::MarkerArray stalkCloudClustersVisualization(const std::vector<CloudT::Ptr> outCloudClusters);

@@ -280,7 +280,8 @@ namespace pagslam
     }
 
 
-    bool PAGSLAMNode::run(const SE3 initialGuess, const SE3 prevKeyPose, CloudT::Ptr h_cloud, CloudT::Ptr v_cloud, StampedSE3 odom, SE3 &outPose)
+    // bool PAGSLAMNode::run(const SE3 initialGuess, const SE3 prevKeyPose, CloudT::Ptr h_cloud, CloudT::Ptr v_cloud, StampedSE3 odom, SE3 &outPose)
+    bool PAGSLAMNode::run(const SE3 initialGuess, const SE3 prevKeyPose, CloudT::Ptr h_cloud, CloudT::Ptr v_cloud, depth_clustering::PointCloudArray::Ptr seg_h_cloud, StampedSE3 odom, SE3 &outPose)
     {
         PagslamInput pagslamIn = PagslamInput();
         PagslamOutput pagslamOut = PagslamOutput();
@@ -299,7 +300,6 @@ namespace pagslam
         //     return false;
         // }
 
-        
         ROS_DEBUG_STREAM("Entering Callback. Lidar data stamp: " << odom.stamp);
 
         // SEGMENTATION
