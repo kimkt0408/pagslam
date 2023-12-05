@@ -177,26 +177,26 @@ namespace pagslam
         return true;
     }
 
-    std::vector<CloudT::Ptr> PAGSLAMNode::segObjectConversion(depth_clustering::PointCloudArray::Ptr& seg_h_cloud)
-    {   
-        // std::vector<CloudT::Ptr> seg_h_cloud_converted;
-        std::vector<CloudT::Ptr> tfm_seg_h_cloud_converted;
+    // std::vector<CloudT::Ptr> PAGSLAMNode::segObjectConversion(depth_clustering::PointCloudArray::Ptr& seg_h_cloud)
+    // {   
+    //     // std::vector<CloudT::Ptr> seg_h_cloud_converted;
+    //     std::vector<CloudT::Ptr> tfm_seg_h_cloud_converted;
 
-        for (int i = 0; i < seg_h_cloud->cloud_array.size(); i++){
-            sensor_msgs::PointCloud2 seg_h_cloud_pcl_ros;
-            seg_h_cloud_pcl_ros = seg_h_cloud->cloud_array[0];
+    //     for (int i = 0; i < seg_h_cloud->cloud_array.size(); i++){
+    //         sensor_msgs::PointCloud2 seg_h_cloud_pcl_ros;
+    //         seg_h_cloud_pcl_ros = seg_h_cloud->cloud_array[0];
             
-            CloudT::Ptr seg_h_cloud_pcl(new CloudT());
+    //         CloudT::Ptr seg_h_cloud_pcl(new CloudT());
 
-            // Direct conversion from ROS message to PCL point cloud
-            pcl::fromROSMsg(seg_h_cloud_pcl_ros, *seg_h_cloud_pcl);
+    //         // Direct conversion from ROS message to PCL point cloud
+    //         pcl::fromROSMsg(seg_h_cloud_pcl_ros, *seg_h_cloud_pcl);
 
 
-            // tfm_seg_h_cloud_converted.push_back(seg_h_cloud_pcl);
-        }
+    //         // tfm_seg_h_cloud_converted.push_back(seg_h_cloud_pcl);
+    //     }
 
-        return tfm_seg_h_cloud_converted;
-    }
+    //     return tfm_seg_h_cloud_converted;
+    // }
 
     bool PAGSLAMNode::rangeviewStalkExtraction(depth_clustering::PointCloudArray::Ptr seg_h_cloud, PagslamInput& pagslamIn)
     {
@@ -225,19 +225,23 @@ namespace pagslam
         // Generate 
         CloudT::Ptr tfm_accumulated_seg_h_cloud(new CloudT);
         std::vector<CloudT::Ptr> tfm_seg_h_cloud_converted;
+    
+        CloudT::Ptr accumulated_seg_h_cloud(new CloudT());
 
-        for (int i = 0; i < seg_h_cloud->cloud_array.size(); i++){
-            sensor_msgs::PointCloud2 seg_h_cloud_pcl_ros;
-            seg_h_cloud_pcl_ros = seg_h_cloud->cloud_array[i];
-            
-            // CloudT temp_cloud;
-            // pcl::fromROSMsg(seg_h_cloud_pcl_ros, temp_cloud);
-
+        // Accumulate all clouds first
+        for (const auto& seg_h_cloud_pcl_ros : seg_h_cloud->cloud_array) {
             CloudT::Ptr seg_h_cloud_pcl(new CloudT());
             CloudT::Ptr tfm_seg_h_cloud_pcl(new CloudT());
+            pcl::fromROSMsg(seg_h_cloud_pcl_ros, *seg_h_cloud_pcl);
+            
+            // (1) Convert to CloudT::Ptr which accumulate points of segmented objects
+            *accumulated_seg_h_cloud += *seg_h_cloud_pcl;
+
+            // (2) Convert to std::vector<CloudT::Ptr> (same data format of outCloudClusters)    
+            // CloudT::Ptr seg_h_cloud_pcl(new CloudT());
 
             // Direct conversion from ROS message to PCL point cloud
-            pcl::fromROSMsg(seg_h_cloud_pcl_ros, *seg_h_cloud_pcl);
+            // pcl::fromROSMsg(seg_h_cloud_pcl_ros, *seg_h_cloud_pcl);
 
             pcl_ros::transformPointCloud(*seg_h_cloud_pcl, *tfm_seg_h_cloud_pcl, transform);
             tfm_seg_h_cloud_pcl->header.frame_id = robot_frame_id_;
@@ -251,8 +255,37 @@ namespace pagslam
             tfm_seg_h_cloud_converted.push_back(tfm_seg_h_cloud_pcl);
         }
 
+        pcl_ros::transformPointCloud(*accumulated_seg_h_cloud, *tfm_accumulated_seg_h_cloud, transform);
         tfm_accumulated_seg_h_cloud->header.frame_id = robot_frame_id_;
         pubVCloud_.publish(tfm_accumulated_seg_h_cloud);
+
+        // for (const auto& seg_h_cloud_pcl_ros : seg_h_cloud->cloud_array) {
+        //     // sensor_msgs::PointCloud2 seg_h_cloud_pcl_ros;
+        //     // seg_h_cloud_pcl_ros = seg_h_cloud->cloud_array[i];
+            
+        //     // CloudT temp_cloud;
+        //     // pcl::fromROSMsg(seg_h_cloud_pcl_ros, temp_cloud);
+
+        //     CloudT::Ptr seg_h_cloud_pcl(new CloudT());
+        //     CloudT::Ptr tfm_seg_h_cloud_pcl(new CloudT());
+
+        //     // Direct conversion from ROS message to PCL point cloud
+        //     pcl::fromROSMsg(seg_h_cloud_pcl_ros, *seg_h_cloud_pcl);
+
+        //     pcl_ros::transformPointCloud(*seg_h_cloud_pcl, *tfm_seg_h_cloud_pcl, transform);
+        //     tfm_seg_h_cloud_pcl->header.frame_id = robot_frame_id_;
+            
+
+        //     // (1) Convert to CloudT::Ptr which accumulate points of segmented objects
+        //     // Append points to the accumulating cloud
+        //     *tfm_accumulated_seg_h_cloud += *tfm_seg_h_cloud_pcl;
+            
+        //     // (2) Convert to std::vector<CloudT::Ptr> (same data format of outCloudClusters)    
+        //     tfm_seg_h_cloud_converted.push_back(tfm_seg_h_cloud_pcl);
+        // }
+
+        // tfm_accumulated_seg_h_cloud->header.frame_id = robot_frame_id_;
+        // pubVCloud_.publish(tfm_accumulated_seg_h_cloud);
 
         // for (int i = 0; i < seg_h_cloud->cloud_array.size(); i++){
         //     sensor_msgs::PointCloud2 seg_h_cloud_pcl_ros;

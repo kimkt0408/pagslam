@@ -53,7 +53,7 @@ namespace pagslam
             visualization_msgs::MarkerArray mapTopCloudVisualization(const std::vector<StalkFeature::Ptr> stalkVector);
             // tf2::Transform SE3ToTransform(const SE3& se3);
 
-            std::vector<CloudT::Ptr> segObjectConversion(depth_clustering::PointCloudArray::Ptr& seg_h_cloud);
+            // std::vector<CloudT::Ptr> segObjectConversion(depth_clustering::PointCloudArray::Ptr& seg_h_cloud);
     
 
         private:
