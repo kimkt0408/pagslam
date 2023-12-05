@@ -13,6 +13,7 @@
 #include <pcl/filters/voxel_grid.h>
 #include <pcl_ros/point_cloud.h>
 #include <pcl_ros/transforms.h>
+#include <pcl/point_types.h>
 
 // Others
 #include <definitions.h>
@@ -37,7 +38,8 @@ namespace pagslam
 
             bool groundExtraction(CloudT::Ptr& h_cloud, PagslamInput& pagslamIn);
             bool stalkExtraction(CloudT::Ptr& v_cloud, PagslamInput& pagslamIn);
-            
+            bool rangeviewStalkExtraction(depth_clustering::PointCloudArray::Ptr seg_h_cloud, PagslamInput& pagslamIn);
+
             // bool run(const SE3 initialGuess, const SE3 prevKeyPose, CloudT::Ptr h_cloud, CloudT::Ptr v_cloud, ros::Time stamp, SE3 &outPose);
             bool run(const SE3 initialGuess, const SE3 prevKeyPose, CloudT::Ptr h_cloud, CloudT::Ptr v_cloud, depth_clustering::PointCloudArray::Ptr seg_h_cloud, StampedSE3 odom, SE3 &outPose);
             
@@ -50,6 +52,9 @@ namespace pagslam
             visualization_msgs::MarkerArray mapCloudVisualization(const std::vector<StalkFeature::Ptr> stalkVector);
             visualization_msgs::MarkerArray mapTopCloudVisualization(const std::vector<StalkFeature::Ptr> stalkVector);
             // tf2::Transform SE3ToTransform(const SE3& se3);
+
+            std::vector<CloudT::Ptr> segObjectConversion(depth_clustering::PointCloudArray::Ptr& seg_h_cloud);
+    
 
         private:
             void initParams_();
