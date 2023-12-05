@@ -7,7 +7,7 @@ namespace pagslam
 {
     PAGSLAMNode::PAGSLAMNode(const ros::NodeHandle &nh) : nh_(nh)
     {
-        debugMode_ = nh_.param("debug_mode", true);
+        debugMode_ = nh_.param("debug_mode", false);
 
         if (debugMode_){
             ROS_DEBUG_STREAM("Running PAGSLAM in Debug Mode" << std::endl);
@@ -201,8 +201,7 @@ namespace pagslam
     bool PAGSLAMNode::rangeviewStalkExtraction(depth_clustering::PointCloudArray::Ptr seg_h_cloud, PagslamInput& pagslamIn)
     {
         CloudT::Ptr stalkCloud(new CloudT());
-
-        //////////////////////////////////////////////////////////////////////////////////////////
+        
         CloudT::Ptr tfm_v_cloud(new CloudT());
         std::vector<CloudT::Ptr> outCloudClusters;
         std::vector<CloudT::Ptr> tfm_outCloudClusters;
@@ -218,11 +217,7 @@ namespace pagslam
         geometry_msgs::Transform transform;
         tf2::convert(tf_stalkSourceToTarget_, transform);
 
-        //$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-        // Publish Objest segments with PointCloud2 array
-        // sensor_msgs::PointCloud2 ros_cloud;
-
-        // Generate 
+        // Variable settings
         CloudT::Ptr tfm_accumulated_seg_h_cloud(new CloudT);
         std::vector<CloudT::Ptr> tfm_seg_h_cloud_converted;
     
@@ -240,18 +235,12 @@ namespace pagslam
             // (2) Convert to std::vector<CloudT::Ptr> (same data format of outCloudClusters)    
             // CloudT::Ptr seg_h_cloud_pcl(new CloudT());
 
-            // Direct conversion from ROS message to PCL point cloud
-            // pcl::fromROSMsg(seg_h_cloud_pcl_ros, *seg_h_cloud_pcl);
-
             pcl_ros::transformPointCloud(*seg_h_cloud_pcl, *tfm_seg_h_cloud_pcl, transform);
             tfm_seg_h_cloud_pcl->header.frame_id = robot_frame_id_;
             
-
-            // (1) Convert to CloudT::Ptr which accumulate points of segmented objects
             // Append points to the accumulating cloud
             *tfm_accumulated_seg_h_cloud += *tfm_seg_h_cloud_pcl;
             
-            // (2) Convert to std::vector<CloudT::Ptr> (same data format of outCloudClusters)    
             tfm_seg_h_cloud_converted.push_back(tfm_seg_h_cloud_pcl);
         }
 
@@ -259,111 +248,12 @@ namespace pagslam
         tfm_accumulated_seg_h_cloud->header.frame_id = robot_frame_id_;
         pubVCloud_.publish(tfm_accumulated_seg_h_cloud);
 
-        // for (const auto& seg_h_cloud_pcl_ros : seg_h_cloud->cloud_array) {
-        //     // sensor_msgs::PointCloud2 seg_h_cloud_pcl_ros;
-        //     // seg_h_cloud_pcl_ros = seg_h_cloud->cloud_array[i];
-            
-        //     // CloudT temp_cloud;
-        //     // pcl::fromROSMsg(seg_h_cloud_pcl_ros, temp_cloud);
-
-        //     CloudT::Ptr seg_h_cloud_pcl(new CloudT());
-        //     CloudT::Ptr tfm_seg_h_cloud_pcl(new CloudT());
-
-        //     // Direct conversion from ROS message to PCL point cloud
-        //     pcl::fromROSMsg(seg_h_cloud_pcl_ros, *seg_h_cloud_pcl);
-
-        //     pcl_ros::transformPointCloud(*seg_h_cloud_pcl, *tfm_seg_h_cloud_pcl, transform);
-        //     tfm_seg_h_cloud_pcl->header.frame_id = robot_frame_id_;
-            
-
-        //     // (1) Convert to CloudT::Ptr which accumulate points of segmented objects
-        //     // Append points to the accumulating cloud
-        //     *tfm_accumulated_seg_h_cloud += *tfm_seg_h_cloud_pcl;
-            
-        //     // (2) Convert to std::vector<CloudT::Ptr> (same data format of outCloudClusters)    
-        //     tfm_seg_h_cloud_converted.push_back(tfm_seg_h_cloud_pcl);
-        // }
-
-        // tfm_accumulated_seg_h_cloud->header.frame_id = robot_frame_id_;
-        // pubVCloud_.publish(tfm_accumulated_seg_h_cloud);
-
-        // for (int i = 0; i < seg_h_cloud->cloud_array.size(); i++){
-        //     sensor_msgs::PointCloud2 seg_h_cloud_pcl_ros;
-        //     seg_h_cloud_pcl_ros = seg_h_cloud->cloud_array[0];
-            
-        //     CloudT::Ptr seg_h_cloud_pcl(new CloudT());
-        //     CloudT::Ptr tfm_seg_h_cloud_pcl(new CloudT());
-
-        //     // Direct conversion from ROS message to PCL point cloud
-        //     pcl::fromROSMsg(seg_h_cloud_pcl_ros, *seg_h_cloud_pcl);
-
-        //     pcl_ros::transformPointCloud(*seg_h_cloud_pcl, *tfm_seg_h_cloud_pcl, transform);
-        //     tfm_seg_h_cloud_pcl->header.frame_id = robot_frame_id_;
-        //     // seg_h_cloud_converted.push_back(seg_h_cloud_pcl);
-        //     pubVCloud_.publish(tfm_seg_h_cloud_pcl);
-        // }
-
-        // tfm_seg_h_cloud_converted.push_back(tfm_seg_h_cloud_pcl);
-
-        // pcl_ros::transformPointCloud(*v_cloud, *tfm_v_cloud, transform);
-        // tfm_v_cloud->header.frame_id = robot_frame_id_;
-
-        // pubVCloud_.publish(tfm_v_cloud);
-
-        // This function is no longer useless
-        // bool_stalkCloudClusters_ =  extractor_->stalkCloudClustersExtraction(tfm_v_cloud, outCloudClusters, pagslamIn.groundFeature.coefficients);
-        
-        // if (!bool_stalkCloudClusters_){
-        //     return false;
-        // }
-
-        // visualization_msgs::MarkerArray viz_stalkCloudClusters = stalkCloudClustersVisualization(outCloudClusters);
-        // pubStalkCloudClustersMarker_.publish(viz_stalkCloudClusters);
-
         // bool_stalkSeedClusters_ = extractor_->stalkSeedClustersExtraction(tfm_v_cloud, outCloudClusters, seedClusters);
         bool_stalkSeedClusters_ = extractor_->stalkSeedClustersExtraction(tfm_accumulated_seg_h_cloud, tfm_seg_h_cloud_converted, seedClusters);
         
-
         visualization_msgs::MarkerArray viz_stalkCloudClusters = stalkCloudClustersVisualization(outCloudClusters);
         pubStalkCloudClustersMarker_.publish(viz_stalkCloudClusters);
 
-        // bool_stalkCloud_ = extractor_->stalkCloudExtraction(v_cloud, stalkCloud); // NEED TO MODIFY
-        // bool_stalkCloud_ = extractor_->stalkCloudExtraction(v_cloud, stalkCloud); // NEED TO MODIFY
-        
-        // pubStalkCloud_.publish(stalkCloud);
-        
-        // if (!bool_stalkCloud_){
-        //     return false;
-        // }
-
-        ////////////////////////////////////////////////////////////////////////////////////////////
-
-        // std::vector<CloudT::Ptr> outCloudClusters;
-        // std::vector<CloudT::Ptr> tfm_outCloudClusters;
-        // std::vector<CloudT::Ptr> seedClusters;
-
-        // bool_stalkCloudClusters_ =  extractor_->stalkCloudClustersExtraction(stalkCloud, outCloudClusters);
-        // bool_stalkCloudClusters_ =  extractor_->stalkCloudClustersExtraction(tfm_v_cloud, outCloudClusters, pagslamIn.groundFeature.coefficients);
-        
-        // if (!bool_stalkCloudClusters_){
-        //     return false;
-        // }
-        
-        // // Transform the point cloud and model coefficients to robot_frame
-        // bool_stalkTransformFrame_ = transformFrame(v_lidar_frame_id_, robot_frame_id_, tf_stalkSourceToTarget_);
-    
-        // if (!bool_stalkTransformFrame_){
-        //     return false;
-        // }
-        
-        // extractor_->transformStalkCloud(tf_stalkSourceToTarget_, outCloudClusters, tfm_outCloudClusters);
-        
-        // visualization_msgs::MarkerArray viz_stalkCloudClusters = stalkCloudClustersVisualization(tfm_outCloudClusters);
-        // pubStalkCloudClustersMarker_.publish(viz_stalkCloudClusters);
-       
-        
-        // bool_stalkSeedClusters_ = extractor_->stalkSeedClustersExtraction(tfm_outCloudClusters, seedClusters);
-        
         if (!bool_stalkSeedClusters_){
             ROS_DEBUG_STREAM("No stalk seed clusters");
             return false;
@@ -421,50 +311,11 @@ namespace pagslam
             return false;
         }
 
-        // visualization_msgs::MarkerArray viz_stalkCloudClusters = stalkCloudClustersVisualization(outCloudClusters);
-        // pubStalkCloudClustersMarker_.publish(viz_stalkCloudClusters);
-
         bool_stalkSeedClusters_ = extractor_->stalkSeedClustersExtraction(tfm_v_cloud, outCloudClusters, seedClusters);
         
         visualization_msgs::MarkerArray viz_stalkCloudClusters = stalkCloudClustersVisualization(outCloudClusters);
         pubStalkCloudClustersMarker_.publish(viz_stalkCloudClusters);
 
-        // bool_stalkCloud_ = extractor_->stalkCloudExtraction(v_cloud, stalkCloud); // NEED TO MODIFY
-        // bool_stalkCloud_ = extractor_->stalkCloudExtraction(v_cloud, stalkCloud); // NEED TO MODIFY
-        
-        // pubStalkCloud_.publish(stalkCloud);
-        
-        // if (!bool_stalkCloud_){
-        //     return false;
-        // }
-
-        ////////////////////////////////////////////////////////////////////////////////////////////
-
-        // std::vector<CloudT::Ptr> outCloudClusters;
-        // std::vector<CloudT::Ptr> tfm_outCloudClusters;
-        // std::vector<CloudT::Ptr> seedClusters;
-
-        // bool_stalkCloudClusters_ =  extractor_->stalkCloudClustersExtraction(stalkCloud, outCloudClusters);
-        // bool_stalkCloudClusters_ =  extractor_->stalkCloudClustersExtraction(tfm_v_cloud, outCloudClusters, pagslamIn.groundFeature.coefficients);
-        
-        // if (!bool_stalkCloudClusters_){
-        //     return false;
-        // }
-        
-        // // Transform the point cloud and model coefficients to robot_frame
-        // bool_stalkTransformFrame_ = transformFrame(v_lidar_frame_id_, robot_frame_id_, tf_stalkSourceToTarget_);
-    
-        // if (!bool_stalkTransformFrame_){
-        //     return false;
-        // }
-        
-        // extractor_->transformStalkCloud(tf_stalkSourceToTarget_, outCloudClusters, tfm_outCloudClusters);
-        
-        // visualization_msgs::MarkerArray viz_stalkCloudClusters = stalkCloudClustersVisualization(tfm_outCloudClusters);
-        // pubStalkCloudClustersMarker_.publish(viz_stalkCloudClusters);
-       
-        
-        // bool_stalkSeedClusters_ = extractor_->stalkSeedClustersExtraction(tfm_outCloudClusters, seedClusters);
         
         if (!bool_stalkSeedClusters_){
             ROS_DEBUG_STREAM("No stalk seed clusters");
