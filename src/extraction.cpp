@@ -56,14 +56,14 @@ namespace ext
 
     // For Range-view h_cloud
     //   seedSearchRadius_(0.12),
-      maxSeedZLimit_(0.5),
+    //   maxSeedZLimit_(0.5),
       minSeedPts_(4),
       nIterations_(100),
       minInliers_(30),      // new-ACRE-long
-      toleranceR_(0.03),
+    //   toleranceR_(0.03),
     //   min_z_addition_(0.10),
     //   max_z_addition_(0.16),
-      offsetSearchRadius_(0.04)
+      offsetSearchRadius_(0.05)
     {}
     
     // (3) ACRE-3
@@ -448,23 +448,35 @@ namespace ext
             //     continue;
             // }
 
-            kdtree.setInputCloud(inCloudCluster);
+            // kdtree.setInputCloud(inCloudCluster);
 
-            Eigen::Vector4f centroid;
-            pcl::compute3DCentroid(*inCloudCluster, centroid);
+            // Eigen::Vector4f centroid;
+            // pcl::compute3DCentroid(*inCloudCluster, centroid);
 
-            PointT searchPoint;
-            searchPoint.x = centroid[0];
-            searchPoint.y = centroid[1];
-            searchPoint.z = centroid[2];
+            // PointT searchPoint;
+            // searchPoint.x = centroid[0];
+            // searchPoint.y = centroid[1];
+            // searchPoint.z = centroid[2];
 
-            int k = 1;      // Only need to find the single nearest point
-            std::vector<int> pointIdxNKNSearch(k);
-            std::vector<float> pointNKNSquaredDistance(k);
-            kdtree.nearestKSearch(searchPoint, k, pointIdxNKNSearch, pointNKNSquaredDistance);
+            // int k = 1;      // Only need to find the single nearest point
+            // std::vector<int> pointIdxNKNSearch(k);
+            // std::vector<float> pointNKNSquaredDistance(k);
+            // kdtree.nearestKSearch(searchPoint, k, pointIdxNKNSearch, pointNKNSquaredDistance);
 
-            PointT nearestPoint = inCloudCluster->points[pointIdxNKNSearch[0]];
-            seedCluster->push_back(nearestPoint);
+            // PointT nearestPoint = inCloudCluster->points[pointIdxNKNSearch[0]];
+
+            // seedCluster->push_back(nearestPoint);
+
+            PointT lowestPoint;
+            lowestPoint.z = std::numeric_limits<float>::max();
+
+            for (const auto& point : inCloudCluster->points) {
+                if (point.z < lowestPoint.z) {
+                    lowestPoint = point;
+                }
+            }
+            
+            seedCluster->push_back(lowestPoint);
             seedClusters.push_back(seedCluster);
 
             idx_vec.push_back(idx);

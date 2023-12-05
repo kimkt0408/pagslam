@@ -251,20 +251,28 @@ namespace pagslam
         // bool_stalkSeedClusters_ = extractor_->stalkSeedClustersExtraction(tfm_v_cloud, outCloudClusters, seedClusters);
         bool_stalkSeedClusters_ = extractor_->stalkSeedClustersExtraction(tfm_accumulated_seg_h_cloud, tfm_seg_h_cloud_converted, seedClusters);
         
-        // Clear previous markers
-        visualization_msgs::MarkerArray clear_markers;
-        visualization_msgs::Marker clear_marker;
-        clear_marker.action = visualization_msgs::Marker::DELETEALL;
-        clear_markers.markers.push_back(clear_marker);
-        pubStalkCloudClustersMarker_.publish(clear_markers);
+        if (!bool_stalkSeedClusters_){
+            ROS_DEBUG_STREAM("No stalk seed clusters");
+
+            // Clear previous markers
+            visualization_msgs::MarkerArray clear_markers;
+            visualization_msgs::Marker clear_marker;
+            clear_marker.action = visualization_msgs::Marker::DELETEALL;
+            clear_markers.markers.push_back(clear_marker);
+            pubStalkCloudClustersMarker_.publish(clear_markers);
+            
+            return false;
+        }
+
+        // // Clear previous markers
+        // visualization_msgs::MarkerArray clear_markers;
+        // visualization_msgs::Marker clear_marker;
+        // clear_marker.action = visualization_msgs::Marker::DELETEALL;
+        // clear_markers.markers.push_back(clear_marker);
+        // pubStalkCloudClustersMarker_.publish(clear_markers);
 
         visualization_msgs::MarkerArray viz_stalkCloudClusters = stalkCloudClustersVisualization(outCloudClusters);
         pubStalkCloudClustersMarker_.publish(viz_stalkCloudClusters);
-
-        if (!bool_stalkSeedClusters_){
-            ROS_DEBUG_STREAM("No stalk seed clusters");
-            return false;
-        }
 
         // if (debugMode_){
             // Publish the marker array
