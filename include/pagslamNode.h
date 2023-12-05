@@ -37,7 +37,7 @@ namespace pagslam
             using ConstPtr = boost::shared_ptr<const PAGSLAMNode>;
 
             bool groundExtraction(CloudT::Ptr& h_cloud, PagslamInput& pagslamIn);
-            bool stalkExtraction(CloudT::Ptr& v_cloud, PagslamInput& pagslamIn);
+            // bool stalkExtraction(CloudT::Ptr& v_cloud, PagslamInput& pagslamIn);
             bool rangeviewStalkExtraction(depth_clustering::PointCloudArray::Ptr seg_h_cloud, PagslamInput& pagslamIn);
 
             // bool run(const SE3 initialGuess, const SE3 prevKeyPose, CloudT::Ptr h_cloud, CloudT::Ptr v_cloud, ros::Time stamp, SE3 &outPose);

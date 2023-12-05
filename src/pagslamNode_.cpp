@@ -251,6 +251,13 @@ namespace pagslam
         // bool_stalkSeedClusters_ = extractor_->stalkSeedClustersExtraction(tfm_v_cloud, outCloudClusters, seedClusters);
         bool_stalkSeedClusters_ = extractor_->stalkSeedClustersExtraction(tfm_accumulated_seg_h_cloud, tfm_seg_h_cloud_converted, seedClusters);
         
+        // Clear previous markers
+        visualization_msgs::MarkerArray clear_markers;
+        visualization_msgs::Marker clear_marker;
+        clear_marker.action = visualization_msgs::Marker::DELETEALL;
+        clear_markers.markers.push_back(clear_marker);
+        pubStalkCloudClustersMarker_.publish(clear_markers);
+
         visualization_msgs::MarkerArray viz_stalkCloudClusters = stalkCloudClustersVisualization(outCloudClusters);
         pubStalkCloudClustersMarker_.publish(viz_stalkCloudClusters);
 
@@ -281,67 +288,67 @@ namespace pagslam
     }
 
 
-    bool PAGSLAMNode::stalkExtraction(CloudT::Ptr& v_cloud, PagslamInput& pagslamIn)
-    {
-        CloudT::Ptr stalkCloud(new CloudT());
+    // bool PAGSLAMNode::stalkExtraction(CloudT::Ptr& v_cloud, PagslamInput& pagslamIn)
+    // {
+    //     CloudT::Ptr stalkCloud(new CloudT());
 
-        //////////////////////////////////////////////////////////////////////////////////////////
-        CloudT::Ptr tfm_v_cloud(new CloudT());
-        std::vector<CloudT::Ptr> outCloudClusters;
-        std::vector<CloudT::Ptr> tfm_outCloudClusters;
-        std::vector<CloudT::Ptr> seedClusters;
+    //     //////////////////////////////////////////////////////////////////////////////////////////
+    //     CloudT::Ptr tfm_v_cloud(new CloudT());
+    //     std::vector<CloudT::Ptr> outCloudClusters;
+    //     std::vector<CloudT::Ptr> tfm_outCloudClusters;
+    //     std::vector<CloudT::Ptr> seedClusters;
 
-        // Transform the point cloud and model coefficients to robot_frame
-        bool_stalkTransformFrame_ = transformFrame(v_lidar_frame_id_, robot_frame_id_, tf_stalkSourceToTarget_);
+    //     // Transform the point cloud and model coefficients to robot_frame
+    //     bool_stalkTransformFrame_ = transformFrame(v_lidar_frame_id_, robot_frame_id_, tf_stalkSourceToTarget_);
     
-        if (!bool_stalkTransformFrame_){
-            return false;
-        }
+    //     if (!bool_stalkTransformFrame_){
+    //         return false;
+    //     }
         
-        geometry_msgs::Transform transform;
-        tf2::convert(tf_stalkSourceToTarget_, transform);
-        pcl_ros::transformPointCloud(*v_cloud, *tfm_v_cloud, transform);
-        tfm_v_cloud->header.frame_id = robot_frame_id_;
+    //     geometry_msgs::Transform transform;
+    //     tf2::convert(tf_stalkSourceToTarget_, transform);
+    //     pcl_ros::transformPointCloud(*v_cloud, *tfm_v_cloud, transform);
+    //     tfm_v_cloud->header.frame_id = robot_frame_id_;
 
-        pubVCloud_.publish(tfm_v_cloud);
+    //     pubVCloud_.publish(tfm_v_cloud);
 
-        bool_stalkCloudClusters_ =  extractor_->stalkCloudClustersExtraction(tfm_v_cloud, outCloudClusters, pagslamIn.groundFeature.coefficients);
+    //     bool_stalkCloudClusters_ =  extractor_->stalkCloudClustersExtraction(tfm_v_cloud, outCloudClusters, pagslamIn.groundFeature.coefficients);
         
-        if (!bool_stalkCloudClusters_){
-            return false;
-        }
+    //     if (!bool_stalkCloudClusters_){
+    //         return false;
+    //     }
 
-        bool_stalkSeedClusters_ = extractor_->stalkSeedClustersExtraction(tfm_v_cloud, outCloudClusters, seedClusters);
+    //     bool_stalkSeedClusters_ = extractor_->stalkSeedClustersExtraction(tfm_v_cloud, outCloudClusters, seedClusters);
         
-        visualization_msgs::MarkerArray viz_stalkCloudClusters = stalkCloudClustersVisualization(outCloudClusters);
-        pubStalkCloudClustersMarker_.publish(viz_stalkCloudClusters);
+    //     visualization_msgs::MarkerArray viz_stalkCloudClusters = stalkCloudClustersVisualization(outCloudClusters);
+    //     pubStalkCloudClustersMarker_.publish(viz_stalkCloudClusters);
 
         
-        if (!bool_stalkSeedClusters_){
-            ROS_DEBUG_STREAM("No stalk seed clusters");
-            return false;
-        }
+    //     if (!bool_stalkSeedClusters_){
+    //         ROS_DEBUG_STREAM("No stalk seed clusters");
+    //         return false;
+    //     }
 
-        // if (debugMode_){
-            // Publish the marker array
-            visualization_msgs::MarkerArray viz_seedClusters = stalkCloudClustersVisualization(seedClusters);
-            pubStalkSeedClustersMarker_.publish(viz_seedClusters);
-        // }
+    //     // if (debugMode_){
+    //         // Publish the marker array
+    //         visualization_msgs::MarkerArray viz_seedClusters = stalkCloudClustersVisualization(seedClusters);
+    //         pubStalkSeedClustersMarker_.publish(viz_seedClusters);
+    //     // }
 
-        std::vector<StalkFeature::Ptr> stalkFeatures;
-        extractor_->representativeLine(seedClusters, stalkFeatures);
+    //     std::vector<StalkFeature::Ptr> stalkFeatures;
+    //     extractor_->representativeLine(seedClusters, stalkFeatures);
 
-        pagslamIn.stalkFeatures = stalkFeatures;
+    //     pagslamIn.stalkFeatures = stalkFeatures;
 
-        // if (debugMode_){
-            stalkLinesVisualization(stalkFeatures);
-        // }
+    //     // if (debugMode_){
+    //         stalkLinesVisualization(stalkFeatures);
+    //     // }
 
-        // if (debugMode_){   
-            // pubVCloud_.publish(tfm_v_cloud);
-        // }
-        return true;
-    }
+    //     // if (debugMode_){   
+    //         // pubVCloud_.publish(tfm_v_cloud);
+    //     // }
+    //     return true;
+    // }
 
 
     // bool PAGSLAMNode::run(const SE3 initialGuess, const SE3 prevKeyPose, CloudT::Ptr h_cloud, CloudT::Ptr v_cloud, StampedSE3 odom, SE3 &outPose)
@@ -530,6 +537,7 @@ namespace pagslam
     visualization_msgs::MarkerArray PAGSLAMNode::stalkCloudClustersVisualization(const std::vector<CloudT::Ptr> outCloudClusters)
     {
         visualization_msgs::MarkerArray marker_array;
+        
         // Loop over each point cloud and create a marker for it
         int id = 0;
 

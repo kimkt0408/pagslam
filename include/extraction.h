@@ -66,7 +66,7 @@ namespace ext
         
             bool stalkCloudExtraction(const CloudT::Ptr inCloud, CloudT::Ptr& outCloud);
             // bool stalkCloudClustersExtraction(CloudT::Ptr inCloud, std::vector<CloudT::Ptr>& outCloudClusters);
-            bool stalkCloudClustersExtraction(CloudT::Ptr inCloud, std::vector<CloudT::Ptr>& outCloudClusters, pcl::ModelCoefficients::Ptr& groundCoefficients);
+            // bool stalkCloudClustersExtraction(CloudT::Ptr inCloud, std::vector<CloudT::Ptr>& outCloudClusters, pcl::ModelCoefficients::Ptr& groundCoefficients);
             void filterByZ(CloudT::Ptr inCloud, CloudT::Ptr& filteredCloud, float lowerLimit, float upperLimit);
             void printPointCloud(CloudT::Ptr cloud); 
 

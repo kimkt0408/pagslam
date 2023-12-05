@@ -43,14 +43,26 @@ namespace ext
     //   minInliers_(30)      // ACRE
 
 
-      seedSearchRadius_(0.12),
+    //   seedSearchRadius_(0.12),
+    //   maxSeedZLimit_(0.5),
+    //   minSeedPts_(4),
+    //   nIterations_(100),
+    //   minInliers_(30),      // new-ACRE-long
+    //   toleranceR_(0.10),
+    //   min_z_addition_(0.10),
+    //   max_z_addition_(0.16),
+    //   offsetSearchRadius_(0.04)
+
+
+    // For Range-view h_cloud
+    //   seedSearchRadius_(0.12),
       maxSeedZLimit_(0.5),
       minSeedPts_(4),
       nIterations_(100),
       minInliers_(30),      // new-ACRE-long
-      toleranceR_(0.10),
-      min_z_addition_(0.10),
-      max_z_addition_(0.16),
+      toleranceR_(0.03),
+    //   min_z_addition_(0.10),
+    //   max_z_addition_(0.16),
       offsetSearchRadius_(0.04)
     {}
     
@@ -246,109 +258,109 @@ namespace ext
         }
     }
 
-    bool Extraction::stalkCloudClustersExtraction(CloudT::Ptr inCloud, std::vector<CloudT::Ptr>& outCloudClusters, pcl::ModelCoefficients::Ptr& groundCoefficients)
-    {
-        // input: tfm_v_cloud (CloudT::Ptr), groundCoefficients
-        // output: outCloudClusters (std::vector<CloudT::Ptr>)
+    // bool Extraction::stalkCloudClustersExtraction(CloudT::Ptr inCloud, std::vector<CloudT::Ptr>& outCloudClusters, pcl::ModelCoefficients::Ptr& groundCoefficients)
+    // {
+    //     // input: tfm_v_cloud (CloudT::Ptr), groundCoefficients
+    //     // output: outCloudClusters (std::vector<CloudT::Ptr>)
 
-        // (1)-1 Filter tfm_v_cloud w.r.t. ground
-        CloudT::Ptr filteredZInCloud(new CloudT);
+    //     // (1)-1 Filter tfm_v_cloud w.r.t. ground
+    //     CloudT::Ptr filteredZInCloud(new CloudT);
 
-        float ground_z_value = -groundCoefficients->values[3] / groundCoefficients->values[2];
-        float minZLimit = ground_z_value + min_z_addition_;
-        float maxZLimit = ground_z_value + max_z_addition_;
+    //     float ground_z_value = -groundCoefficients->values[3] / groundCoefficients->values[2];
+    //     float minZLimit = ground_z_value + min_z_addition_;
+    //     float maxZLimit = ground_z_value + max_z_addition_;
 
-        filterByZ(inCloud, filteredZInCloud, minZLimit, maxZLimit);
-        // cout << "FILTERED: " << filteredZInCloud->size() << endl;
-        // printPointCloud(filteredZInCloud);
+    //     filterByZ(inCloud, filteredZInCloud, minZLimit, maxZLimit);
+    //     // cout << "FILTERED: " << filteredZInCloud->size() << endl;
+    //     // printPointCloud(filteredZInCloud);
 
-        // (1)-2 Find initial seed points (DBSCAN)
-        std::vector<pcl::PointIndices> cluster_indices;
-        dbscan(filteredZInCloud, eps_, minDbscanPts_, cluster_indices);
+    //     // (1)-2 Find initial seed points (DBSCAN)
+    //     std::vector<pcl::PointIndices> cluster_indices;
+    //     dbscan(filteredZInCloud, eps_, minDbscanPts_, cluster_indices);
 
-        if (cluster_indices.empty()){
-            return false;
-        } 
-        else {
-            // Save the points corresponding to the indices of each cluster in an unordered_map
-            std::unordered_map<int, CloudT::Ptr> clusters;
-            int cluster_id = 0;
+    //     if (cluster_indices.empty()){
+    //         return false;
+    //     } 
+    //     else {
+    //         // Save the points corresponding to the indices of each cluster in an unordered_map
+    //         std::unordered_map<int, CloudT::Ptr> clusters;
+    //         int cluster_id = 0;
             
-            for (const pcl::PointIndices& indices : cluster_indices) {
-                if (clusters.count(cluster_id) == 0) {
-                    clusters[cluster_id] = CloudT::Ptr(new CloudT);
-                }
-                for (int pit : indices.indices) {
-                    clusters[cluster_id]->points.push_back(filteredZInCloud->points[pit]);
-                }
-                ++cluster_id;
-            }
+    //         for (const pcl::PointIndices& indices : cluster_indices) {
+    //             if (clusters.count(cluster_id) == 0) {
+    //                 clusters[cluster_id] = CloudT::Ptr(new CloudT);
+    //             }
+    //             for (int pit : indices.indices) {
+    //                 clusters[cluster_id]->points.push_back(filteredZInCloud->points[pit]);
+    //             }
+    //             ++cluster_id;
+    //         }
 
-            // Copy the clusters from the unordered_map to the output vector
-            for (const auto& cluster : clusters) {
-                CloudT::Ptr cloud = cluster.second;
-                cloud->width = cloud->points.size();
-                cloud->height = 1;
-                cloud->is_dense = true;
-                cloud->header = inCloud->header;
-                outCloudClusters.push_back(cloud);
+    //         // Copy the clusters from the unordered_map to the output vector
+    //         for (const auto& cluster : clusters) {
+    //             CloudT::Ptr cloud = cluster.second;
+    //             cloud->width = cloud->points.size();
+    //             cloud->height = 1;
+    //             cloud->is_dense = true;
+    //             cloud->header = inCloud->header;
+    //             outCloudClusters.push_back(cloud);
 
-                // cout << clusters.size() << " " << cloud->width << " FILTERED: " << ground_z_value << endl;
-            }
-            // cout << clusters.size() << " FILTERED: " << ground_z_value << endl;
-        }
-        return true;
+    //             // cout << clusters.size() << " " << cloud->width << " FILTERED: " << ground_z_value << endl;
+    //         }
+    //         // cout << clusters.size() << " FILTERED: " << ground_z_value << endl;
+    //     }
+    //     return true;
 
-        // (1)-3 Find stalkCloud
+    //     // (1)-3 Find stalkCloud
         
 
 
-        // (2)-1 Search seed points per each initial seed point
-        // input: outCloudClusters (std::vector<CloudT::Ptr>)
-        // output: seedClusters (std::vector<CloudT::Ptr>)
+    //     // (2)-1 Search seed points per each initial seed point
+    //     // input: outCloudClusters (std::vector<CloudT::Ptr>)
+    //     // output: seedClusters (std::vector<CloudT::Ptr>)
 
-        /////////////////////////////////////////////////////////////
-        // // Project point cloud onto XY plane
-        // CloudT::Ptr tmpInCloud(new CloudT);
-        // pcl::copyPointCloud(*inCloud, *tmpInCloud);
-        // for (auto& point : tmpInCloud->points){
-        //     point.y = 0;
-        // }
+    //     /////////////////////////////////////////////////////////////
+    //     // // Project point cloud onto XY plane
+    //     // CloudT::Ptr tmpInCloud(new CloudT);
+    //     // pcl::copyPointCloud(*inCloud, *tmpInCloud);
+    //     // for (auto& point : tmpInCloud->points){
+    //     //     point.y = 0;
+    //     // }
 
-        // // Perform DBSCAN
-        // std::vector<pcl::PointIndices> cluster_indices;
-        // dbscan(tmpInCloud, eps_, minDbscanPts_, cluster_indices);
+    //     // // Perform DBSCAN
+    //     // std::vector<pcl::PointIndices> cluster_indices;
+    //     // dbscan(tmpInCloud, eps_, minDbscanPts_, cluster_indices);
 
-        // if (cluster_indices.empty()){
-        //     return false;
-        // } 
-        // else {
-        //     // Save the points corresponding to the indices of each cluster in an unordered_map
-        //     std::unordered_map<int, CloudT::Ptr> clusters;
-        //     int cluster_id = 0;
+    //     // if (cluster_indices.empty()){
+    //     //     return false;
+    //     // } 
+    //     // else {
+    //     //     // Save the points corresponding to the indices of each cluster in an unordered_map
+    //     //     std::unordered_map<int, CloudT::Ptr> clusters;
+    //     //     int cluster_id = 0;
             
-        //     for (const pcl::PointIndices& indices : cluster_indices) {
-        //         if (clusters.count(cluster_id) == 0) {
-        //             clusters[cluster_id] = CloudT::Ptr(new CloudT);
-        //         }
-        //         for (int pit : indices.indices) {
-        //             clusters[cluster_id]->points.push_back(inCloud->points[pit]);
-        //         }
-        //         ++cluster_id;
-        //     }
+    //     //     for (const pcl::PointIndices& indices : cluster_indices) {
+    //     //         if (clusters.count(cluster_id) == 0) {
+    //     //             clusters[cluster_id] = CloudT::Ptr(new CloudT);
+    //     //         }
+    //     //         for (int pit : indices.indices) {
+    //     //             clusters[cluster_id]->points.push_back(inCloud->points[pit]);
+    //     //         }
+    //     //         ++cluster_id;
+    //     //     }
 
-        //     // Copy the clusters from the unordered_map to the output vector
-        //     for (const auto& cluster : clusters) {
-        //         CloudT::Ptr cloud = cluster.second;
-        //         cloud->width = cloud->points.size();
-        //         cloud->height = 1;
-        //         cloud->is_dense = true;
-        //         cloud->header = tmpInCloud->header;
-        //         outCloudClusters.push_back(cloud);
-        //     }
-        // }
-        // return true;
-    }
+    //     //     // Copy the clusters from the unordered_map to the output vector
+    //     //     for (const auto& cluster : clusters) {
+    //     //         CloudT::Ptr cloud = cluster.second;
+    //     //         cloud->width = cloud->points.size();
+    //     //         cloud->height = 1;
+    //     //         cloud->is_dense = true;
+    //     //         cloud->header = tmpInCloud->header;
+    //     //         outCloudClusters.push_back(cloud);
+    //     //     }
+    //     // }
+    //     // return true;
+    // }
 
 
     // bool Extraction::stalkCloudClustersExtraction(CloudT::Ptr inCloud, std::vector<CloudT::Ptr>& outCloudClusters)
@@ -458,17 +470,17 @@ namespace ext
             idx_vec.push_back(idx);
 
 
-            // Find points with tolerances in x, y values from the initial seed points
-            for (const auto& point : inCloud->points) {
-                float deltaX = std::abs(point.x - nearestPoint.x);
-                float deltaY = std::abs(point.y - nearestPoint.y);
+            // // Find points with tolerances in x, y values from the initial seed points
+            // for (const auto& point : inCloud->points) {
+            //     float deltaX = std::abs(point.x - nearestPoint.x);
+            //     float deltaY = std::abs(point.y - nearestPoint.y);
 
-                float deltaR = std::sqrt(deltaX*deltaX+ deltaY*deltaY);
+            //     float deltaR = std::sqrt(deltaX*deltaX+ deltaY*deltaY);
 
-                if (deltaR <= toleranceR_) {
-                    inCloudCluster->push_back(point);
-                }
-            }
+            //     if (deltaR <= toleranceR_) {
+            //         inCloudCluster->push_back(point);
+            //     }
+            // }
         }
     }
 

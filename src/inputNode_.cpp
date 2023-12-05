@@ -103,14 +103,17 @@ InputManager::InputManager(ros::NodeHandle nh) : nh_(nh), tf_listener_{tf_buffer
     // (2) ACRE-1
     // nh_.param<float>("min_odom_distance", minOdomDistance_, 0.05); //0.05
     // nh_.param<float>("max_time_difference", maxTimeDifference_, 0.05); //0.05
-    // (2) ACRE-2
+    // (3) ACRE-2
     // nh_.param<float>("min_odom_distance", minOdomDistance_, 0.1); //0.05
     // nh_.param<float>("max_time_difference", maxTimeDifference_, 0.05); //0.05
-    // (3) ACRE-3
+    // (4) ACRE-3
     // nh_.param<float>("min_odom_distance", minOdomDistance_, 0.01); //0.05
     // nh_.param<float>("max_time_difference", maxTimeDifference_, 0.05); //0.05
-    // (2) new-ACRE-long
-    nh_.param<float>("min_odom_distance", minOdomDistance_, 0.1); //0.05
+    // // (5) new-ACRE-long
+    // nh_.param<float>("min_odom_distance", minOdomDistance_, 0.1); //0.05
+    // nh_.param<float>("max_time_difference", maxTimeDifference_, 0.05); //0.05
+    // (6) new-ACRE-long
+    nh_.param<float>("min_odom_distance", minOdomDistance_, 0.01); //0.05
     nh_.param<float>("max_time_difference", maxTimeDifference_, 0.05); //0.05
 
     odomFreqFilter_ = nh_.param("odom_freq_filter", 1);
