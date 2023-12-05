@@ -38,7 +38,7 @@ namespace pagslam
 
         // Range-view h_cloud
         stalkMatchThresh_ = 0.06;  // 0.12 // 0.3 
-        minStalkMatches_ = 3; //2;
+        minStalkMatches_ = 2; //2;
         rangeGroundMatch_ = 3; // 4
         AddNewStalkThreshDist_ = 0.06;
         maxNumIterations_ = 100;
@@ -626,8 +626,8 @@ namespace pagslam
             out[1] = params[1];
             out[2] = params[5];
 
-            // ROS_DEBUG_STREAM("XYYaw: Optimized After " << out[0] << " " << out[1] << " " << out[2]); 
-            cout << "**************XYYaw: Optimized After " << out[0] << " " << out[1] << " " << out[2] << "**************" << endl; 
+            ROS_DEBUG_STREAM("XYYaw: Optimized After " << out[0] << " " << out[1] << " " << out[2]); 
+            // cout << "**************XYYaw: Optimized After " << out[0] << " " << out[1] << " " << out[2] << "**************" << endl; 
         }
         else{
             out[0] = t[0];

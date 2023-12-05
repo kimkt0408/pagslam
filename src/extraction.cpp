@@ -26,7 +26,7 @@ namespace ext
     //   maxSeedZLimit_(0.1),
       maxGrowthSearch_(30),
     //   seedSearchRadius_(0.20),
-      tan_vec_threshold_(0.1),
+    //   tan_vec_threshold_(0.1),
     //   minSeedPts_(3),
     //   nIterations_(20),
     //   minInliers_(100),   // Sim
@@ -63,7 +63,8 @@ namespace ext
     //   toleranceR_(0.03),
     //   min_z_addition_(0.10),
     //   max_z_addition_(0.16),
-      offsetSearchRadius_(0.05)
+      offsetSearchRadius_(0.08),
+      tan_vec_threshold_(1.0)
     {}
     
     // (3) ACRE-3

@@ -118,7 +118,7 @@ InputManager::InputManager(ros::NodeHandle nh) : nh_(nh), tf_listener_{tf_buffer
 
     odomFreqFilter_ = nh_.param("odom_freq_filter", 1);
 
-    maxQueueSize_ = nh_.param("maxQueueSize", 30);
+    maxQueueSize_ = nh_.param("maxQueueSize", 100);
     // odomFreqFilter_ = nh_.param("odom_freq_filter", 20);
 
     publishTf_ = nh_.param("publish_tf", true);
@@ -173,6 +173,8 @@ void InputManager::OdomCb_(const nav_msgs::OdometryConstPtr &odom_msg)
              pose.orientation.y, pose.orientation.z);
     Vector3 pos(pose.position.x, pose.position.y, pose.position.z);
 
+    cout << "***: " << pose.position.x << " " << pose.position.y << " " << pose.position.z << endl;
+
     SE3 odom = SE3();
     odom.setQuaternion(rot);
     odom.translation() = pos;
@@ -223,10 +225,31 @@ bool InputManager::Run()
         return false;
     }
 
-    for (auto i = 0; i < odomQueue_.size(); ++i){
-        auto odom = odomQueue_[i];
+    // for (auto i = 0; i < odomQueue_.size(); ++i){
+    while(!odomQueue_.empty()) {
+        auto odom = odomQueue_.front();
+        // auto odom = odomQueue_[i];
+
         // Use odom to estimate motion since last key frame
+        
         SE3 currRelativeMotion = latestOdom.pose.inverse() * odom.pose;
+        
+        std::cout << "================================" << std::endl;
+        std::cout << "latestOdom Position: "
+        << "x: " << latestOdom.pose.translation().x() 
+        << ", y: " << latestOdom.pose.translation().y() 
+        << ", z: " << latestOdom.pose.translation().z() << std::endl;
+
+        std::cout << "      odom Position: "
+        << "x: " << odom.pose.translation().x() 
+        << ", y: " << odom.pose.translation().y() 
+        << ", z: " << odom.pose.translation().z() << std::endl;
+
+        std::cout << " currRelativeMotion:"
+        << "norm: " << currRelativeMotion.translation().norm() 
+        << ", x: " << currRelativeMotion.translation().x() 
+        << ", y: " << currRelativeMotion.translation().y() 
+        << ", z: " << currRelativeMotion.translation().z() << std::endl;
 
         if (firstOdom_){
             ROS_DEBUG_STREAM("First pagslam call");
@@ -237,6 +260,7 @@ bool InputManager::Run()
                 if(publishTf_){
                     Odom2SlamTf(latestOdom.stamp);
                 }
+                odomQueue_.pop_front();
                 return true;
             }
         }
@@ -244,19 +268,22 @@ bool InputManager::Run()
             double accumMovement = currRelativeMotion.translation().norm();
             if (accumMovement > minOdomDistance_){
                 ROS_DEBUG_STREAM("Pagslam call" << accumMovement);
-                int k = 0;
+                // int k = 0;
                 if (callPAGSLAM(currRelativeMotion, odom)){
                     latestOdom.pose = odom.pose;
                     latestOdom.stamp = odom.stamp;
                     if(publishTf_){
                         Odom2SlamTf(latestOdom.stamp);
                     }
-                    k = 1;
+                    // k = 1;
+                    odomQueue_.pop_front();
                     return true;
                 }
                 ROS_DEBUG_STREAM("Distance between frames: " << accumMovement);
             }
         }
+
+        odomQueue_.pop_front();
     }
     return false;
 }
@@ -316,40 +343,40 @@ int InputManager::FindPC(const ros::Time stamp, CloudT::Ptr h_cloud, CloudT::Ptr
     }
         
      while (!h_pcQueue_.empty() && !v_pcQueue_.empty() && !seg_h_pcQueue_.empty()){
-        ROS_DEBUG_STREAM("SIZE: " << h_pcQueue_.size() << " " << seg_h_pcQueue_.size() << " " << v_pcQueue_.size());
+        // ROS_DEBUG_STREAM("SIZE: " << h_pcQueue_.size() << " " << seg_h_pcQueue_.size() << " " << v_pcQueue_.size());
         if (h_pcQueue_.front()->header.stamp.toSec() < stamp.toSec() - maxTimeDifference_){
-            ROS_DEBUG_STREAM("H_PCLOUD MSG TOO OLD " << h_pcQueue_.front()->header.stamp.toSec() << " " << stamp.toSec());
+            //ROS_DEBUG_STREAM("H_PCLOUD MSG TOO OLD " << h_pcQueue_.front()->header.stamp.toSec() << " " << stamp.toSec());
             h_pcQueue_.pop();
             // seg_h_pcQueue_.pop();
         }
         else if (h_pcQueue_.front()->header.stamp.toSec() > stamp.toSec() + maxTimeDifference_){
-            ROS_DEBUG_STREAM("H_PCLOUD MSG TOO NEW " << h_pcQueue_.front()->header.stamp.toSec() << " " << stamp.toSec());
+            //ROS_DEBUG_STREAM("H_PCLOUD MSG TOO NEW " << h_pcQueue_.front()->header.stamp.toSec() << " " << stamp.toSec());
             return CLOUD_TOO_NEW;
         }
         else{
             if (v_pcQueue_.front()->header.stamp.toSec() < stamp.toSec() - maxTimeDifference_){
-                ROS_DEBUG_STREAM("V_PCLOUD MSG TOO OLD " << v_pcQueue_.front()->header.stamp.toSec() << " " << stamp.toSec());
+                //ROS_DEBUG_STREAM("V_PCLOUD MSG TOO OLD " << v_pcQueue_.front()->header.stamp.toSec() << " " << stamp.toSec());
                 v_pcQueue_.pop();
             }
             else if (v_pcQueue_.front()->header.stamp.toSec() > stamp.toSec() + maxTimeDifference_){
-                ROS_DEBUG_STREAM("V_PCLOUD MSG TOO NEW " << v_pcQueue_.front()->header.stamp.toSec() << " " << stamp.toSec());
+                //ROS_DEBUG_STREAM("V_PCLOUD MSG TOO NEW " << v_pcQueue_.front()->header.stamp.toSec() << " " << stamp.toSec());
                 return CLOUD_TOO_NEW;
             }
             else{   
                 while(!seg_h_pcQueue_.empty()){
-                    ROS_DEBUG_STREAM(seg_h_pcQueue_.front()->cloud_array[0].header.stamp.toSec());
+                    //ROS_DEBUG_STREAM(seg_h_pcQueue_.front()->cloud_array[0].header.stamp.toSec());
 
                     if (seg_h_pcQueue_.front()->cloud_array[0].header.stamp.toSec() < h_pcQueue_.front()->header.stamp.toSec() - maxTimeDifference_){
-                        ROS_DEBUG_STREAM("SEG_H_PCLOUD MSG TOO OLD " << seg_h_pcQueue_.front()->cloud_array[0].header.stamp.toSec() << " " << stamp.toSec());
+                        //ROS_DEBUG_STREAM("SEG_H_PCLOUD MSG TOO OLD " << seg_h_pcQueue_.front()->cloud_array[0].header.stamp.toSec() << " " << stamp.toSec());
                         seg_h_pcQueue_.pop();
                     }
                     else if (seg_h_pcQueue_.front()->cloud_array[0].header.stamp.toSec() > h_pcQueue_.front()->header.stamp.toSec() + maxTimeDifference_){
-                        ROS_DEBUG_STREAM("SEG_H_PCLOUD MSG TOO NEW " << seg_h_pcQueue_.front()->cloud_array[0].header.stamp.toSec() << " " << stamp.toSec());
+                        //ROS_DEBUG_STREAM("SEG_H_PCLOUD MSG TOO NEW " << seg_h_pcQueue_.front()->cloud_array[0].header.stamp.toSec() << " " << stamp.toSec());
                         return CLOUD_TOO_NEW;
                     }
                     else{
-                        ROS_DEBUG_STREAM("=======================================");
-                        ROS_DEBUG_STREAM("Calling PAGSLAM:\n h_cloud: " << h_pcQueue_.front()->header.stamp.toSec() << "\n v_cloud: " << v_pcQueue_.front()->header.stamp.toSec() << "\n seg_h_cloud: " << seg_h_pcQueue_.front()->cloud_array[0].header.stamp.toSec() << "\n odom:" << stamp.toSec());
+                        //ROS_DEBUG_STREAM("=======================================");
+                        //ROS_DEBUG_STREAM("Calling PAGSLAM:\n h_cloud: " << h_pcQueue_.front()->header.stamp.toSec() << "\n v_cloud: " << v_pcQueue_.front()->header.stamp.toSec() << "\n seg_h_cloud: " << seg_h_pcQueue_.front()->cloud_array[0].header.stamp.toSec() << "\n odom:" << stamp.toSec());
                         
                         // cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!: " << seg_h_pcQueue_.front()->cloud_array[0].header.stamp.toSec() << " " << seg_h_pcQueue_.front()->cloud_array[1].header.stamp.toSec() << endl;
                         // ROS_DEBUG_STREAM("Calling PAGSLAM:\n h_cloud: " << h_pcQueue_.front()->header.stamp.toSec() << "\n v_cloud: " << v_pcQueue_.front()->header.stamp.toSec() << "\n odom:" << stamp.toSec());
