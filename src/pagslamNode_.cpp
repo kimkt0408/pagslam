@@ -143,7 +143,7 @@ namespace pagslam
         // pass.setFilterLimits(-1.0, -0.5);  // Set the filter limits for negative z-values
         
         // (2) ACRE
-        pass.setFilterLimits(-1.0, -0.5);  // Set the filter limits for negative z-values
+        pass.setFilterLimits(-1.2, -0.6);  // Set the filter limits for negative z-values
         // pass.setFilterLimitsNegative(false);  // Keep points inside the limits
         pass.filter(*h_cloud);
 

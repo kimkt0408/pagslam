@@ -59,7 +59,7 @@ namespace ext
     //   maxSeedZLimit_(0.5),
       minSeedPts_(4),
       nIterations_(100),
-      minInliers_(30),      // new-ACRE-long
+      minInliers_(140),      // new-ACRE-long
     //   toleranceR_(0.03),
     //   min_z_addition_(0.10),
     //   max_z_addition_(0.16),
