@@ -37,10 +37,10 @@ namespace pagslam
         // huberLossThresh_ = 1; // 0.1
 
         // Range-view h_cloud
-        stalkMatchThresh_ = 0.06;  // 0.12 // 0.3 
-        minStalkMatches_ = 2; //2;
+        stalkMatchThresh_ = 0.08;  // 0.12 // 0.3 
+        minStalkMatches_ = 3; //2;
         rangeGroundMatch_ = 3; // 4
-        AddNewStalkThreshDist_ = 0.06;
+        AddNewStalkThreshDist_ = stalkMatchThresh_;
         maxNumIterations_ = 100;
         huberLossThresh_ = 1; // 0.1
     }
@@ -297,7 +297,7 @@ namespace pagslam
             if (bestDist < distThresh && 
                 (bestMatches.find(cf) == bestMatches.end() || bestDist < bestMatches[cf].second)) 
             {   
-                // cout << n << " Best match: " << bestDist << endl;
+                // cout << n << " Best match: " << bestDist << endl << bestMapFeature->root << endl << cf_proj->root << endl;
                 bestMatches[cf] = {bestMapFeature, bestDist};
             }
         }
@@ -559,6 +559,7 @@ namespace pagslam
             problem.AddParameterBlock(params, 6);
             // setting z, roll and pitch as constant
             ceres::SubsetParameterization *subset_parameterization =
+                // new ceres::SubsetParameterization(6, {2, 3, 4});
                 new ceres::SubsetParameterization(6, {1, 2, 3, 4});
             problem.SetParameterization(params, subset_parameterization);
 
@@ -773,7 +774,8 @@ namespace pagslam
         // std::cout << summary.FullReport() << "\n" << summary.termination_type << " " << success << endl;
             
         if(success){
-            out[0] = params[2];
+            // out[0] = params[2];
+            out[0] = 0;
             out[1] = params[3];
             out[2] = params[4];
             
