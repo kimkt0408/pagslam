@@ -239,22 +239,22 @@ bool InputManager::Run()
         
         SE3 currRelativeMotion = latestOdom.pose.inverse() * odom.pose;
         
-        std::cout << "================================" << std::endl;
-        std::cout << "latestOdom Position: "
-        << "x: " << latestOdom.pose.translation().x() 
-        << ", y: " << latestOdom.pose.translation().y() 
-        << ", z: " << latestOdom.pose.translation().z() << std::endl;
+        // std::cout << "================================" << std::endl;
+        // std::cout << "latestOdom Position: "
+        // << "x: " << latestOdom.pose.translation().x() 
+        // << ", y: " << latestOdom.pose.translation().y() 
+        // << ", z: " << latestOdom.pose.translation().z() << std::endl;
 
-        std::cout << "      odom Position: "
-        << "x: " << odom.pose.translation().x() 
-        << ", y: " << odom.pose.translation().y() 
-        << ", z: " << odom.pose.translation().z() << std::endl;
+        // std::cout << "      odom Position: "
+        // << "x: " << odom.pose.translation().x() 
+        // << ", y: " << odom.pose.translation().y() 
+        // << ", z: " << odom.pose.translation().z() << std::endl;
 
-        std::cout << " currRelativeMotion:"
-        << "norm: " << currRelativeMotion.translation().norm() 
-        << ", x: " << currRelativeMotion.translation().x() 
-        << ", y: " << currRelativeMotion.translation().y() 
-        << ", z: " << currRelativeMotion.translation().z() << std::endl;
+        // std::cout << " currRelativeMotion:"
+        // << "norm: " << currRelativeMotion.translation().norm() 
+        // << ", x: " << currRelativeMotion.translation().x() 
+        // << ", y: " << currRelativeMotion.translation().y() 
+        // << ", z: " << currRelativeMotion.translation().z() << std::endl;
 
         if (firstOdom_){
             ROS_DEBUG_STREAM("First pagslam call");

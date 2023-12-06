@@ -715,11 +715,11 @@ namespace pagslam
 
         int i = 0;
         for (auto point : currFeature.cloud->points){
-            const double distance = sqrt(point.x*point.x + point.y*point.y + point.z*point.z);
+            // const double distance = sqrt(point.x*point.x + point.y*point.y + point.z*point.z);
             // if (distance < rangeGroundMatch_){
                 Vector3 scene_point (point.x, point.y, point.z);
-                double weight = 1/distance;
-                // double weight = 1;
+                // double weight = 1/distance;
+                double weight = 1;
                 
                 // double weight = scene_point.norm();
                 // double weight = 1e-2; // 1e-2
