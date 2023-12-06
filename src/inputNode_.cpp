@@ -108,7 +108,7 @@ InputManager::InputManager(ros::NodeHandle nh) : nh_(nh), tf_listener_{tf_buffer
 
     odomFreqFilter_ = nh_.param("odom_freq_filter", 1);
 
-    maxQueueSize_ = nh_.param("maxQueueSize", 30);
+    maxQueueSize_ = nh_.param("maxQueueSize", 100);
     // odomFreqFilter_ = nh_.param("odom_freq_filter", 20);
 
     publishTf_ = nh_.param("publish_tf", true);
@@ -200,10 +200,32 @@ bool InputManager::Run()
         return false;
     }
 
-    for (auto i = 0; i < odomQueue_.size(); ++i){
-        auto odom = odomQueue_[i];
+    // for (auto i = 0; i < odomQueue_.size(); ++i){
+    //     auto odom = odomQueue_[i];
+
+    while(!odomQueue_.empty()) {
+        auto odom = odomQueue_.front();
+        // auto odom = odomQueue_[i];
+
         // Use odom to estimate motion since last key frame
         SE3 currRelativeMotion = latestOdom.pose.inverse() * odom.pose;
+        
+        std::cout << "================================" << std::endl;
+        std::cout << "latestOdom Position: "
+        << "x: " << latestOdom.pose.translation().x() 
+        << ", y: " << latestOdom.pose.translation().y() 
+        << ", z: " << latestOdom.pose.translation().z() << std::endl;
+
+        std::cout << "      odom Position: "
+        << "x: " << odom.pose.translation().x() 
+        << ", y: " << odom.pose.translation().y() 
+        << ", z: " << odom.pose.translation().z() << std::endl;
+
+        std::cout << " currRelativeMotion:"
+        << "norm: " << currRelativeMotion.translation().norm() 
+        << ", x: " << currRelativeMotion.translation().x() 
+        << ", y: " << currRelativeMotion.translation().y() 
+        << ", z: " << currRelativeMotion.translation().z() << std::endl;
 
         if (firstOdom_){
             ROS_DEBUG_STREAM("First pagslam call");
@@ -221,19 +243,19 @@ bool InputManager::Run()
             double accumMovement = currRelativeMotion.translation().norm();
             if (accumMovement > minOdomDistance_){
                 ROS_DEBUG_STREAM("Pagslam call" << accumMovement);
-                int k = 0;
+                
                 if (callPAGSLAM(currRelativeMotion, odom)){
                     latestOdom.pose = odom.pose;
                     latestOdom.stamp = odom.stamp;
                     if(publishTf_){
                         Odom2SlamTf(latestOdom.stamp);
                     }
-                    k = 1;
                     return true;
                 }
                 ROS_DEBUG_STREAM("Distance between frames: " << accumMovement);
             }
         }
+        odomQueue_.pop_front();
     }
     return false;
 }
