@@ -777,7 +777,6 @@ namespace pagslam
         // std::cout << summary.FullReport() << "\n" << summary.termination_type << " " << success << endl;
 
         if(success){
-            1
             out[0] = params[2];
             // out[0] = 0;
             out[1] = params[3];
