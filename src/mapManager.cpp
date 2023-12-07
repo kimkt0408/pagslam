@@ -74,9 +74,9 @@ void MapManager::getSubmap(const SE3& pose, std::vector<StalkFeature::Ptr>& subm
 
 void MapManager::updateMap(std::vector<StalkFeature::Ptr>& stalks, const std::vector<int>& matches){
     
-    // landmarks_.reset(new CloudT);
-    // stalkModels_.clear();
-    // stalkHits_.clear();
+    landmarks_.reset(new CloudT);
+    stalkModels_.clear();
+    stalkHits_.clear();
 
     size_t i = 0;
 

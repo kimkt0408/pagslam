@@ -819,8 +819,6 @@ namespace pagslam
                 ++key;
             }
 
-
-
             // create feature matches according to model association
             if (bestDist < AddNewStalkThreshDist_){             // Case1: Matched with existing landmark
                 cout << "MATCHED: " << stalkCounter << ": " << bestDist << endl;
