@@ -572,9 +572,9 @@ namespace pagslam
 
                 // cout << root << " " << direction << endl;
 
-                double weight = 1.0;
+                // double weight = 1.0;
                 int n = 0;
-                // double weight = 1e2/stalkMatch.sceneFeature->cloud.size();
+                double weight = 1e2/stalkMatch.sceneFeature->cloud.size();
                 CloudT modelCloud = stalkMatch.modelFeature->cloud;
 
                 // cout << "!!!: " << stalkMatch.sceneFeature->cloud.size() << endl;
