@@ -5,7 +5,7 @@ MapManager::MapManager(const float searchRadius){
     sqSearchRadius = searchRadius*searchRadius;
     searchThreshold = searchRadius;
     // mapStalkHits_ = 2; // SIM
-    mapStalkHits_ = 2; // ACRE
+    mapStalkHits_ = 1; // ACRE
     landmarks_.reset(new CloudT);
 }
 
@@ -86,72 +86,72 @@ void MapManager::updateMap(std::vector<StalkFeature::Ptr>& stalks, const std::ve
     for(auto const& stalk : stalks){
 
         PointT pt;
-        // pt.x = stalk->root(0); pt.y = stalk->root(1); pt.z = stalk->root(2);
+        pt.x = stalk->root(0); pt.y = stalk->root(1); pt.z = stalk->root(2);
 
-        // landmarks_->push_back(pt);
-        // stalkModels_.push_back(stalk);
-        // stalkHits_.push_back(1);
+        landmarks_->push_back(pt);
+        stalkModels_.push_back(stalk);
+        stalkHits_.push_back(1);
 
-        if(matches[i] == -1){        
-            pt.x = stalk->root(0); pt.y = stalk->root(1); pt.z = stalk->root(2);
-            landmarks_->push_back(pt);
-            stalkModels_.push_back(stalk);
-            stalkHits_.push_back(1);
-        }
-        else if (matches[i] != -2) {
-            int matchIdx = matchesMap[matches[i]];
-            stalkHits_[matchIdx] += 1;
+        // if(matches[i] == -1){        
+        //     pt.x = stalk->root(0); pt.y = stalk->root(1); pt.z = stalk->root(2);
+        //     landmarks_->push_back(pt);
+        //     stalkModels_.push_back(stalk);
+        //     stalkHits_.push_back(1);
+        // }
+        // else if (matches[i] != -2) {
+        //     int matchIdx = matchesMap[matches[i]];
+        //     stalkHits_[matchIdx] += 1;
             
-            StalkFeature::Ptr stalk_tmp = stalkModels_[matchIdx];
-            stalk_tmp->cloud.insert(stalk_tmp->cloud.end(), stalk->cloud.begin(), stalk->cloud.end());
+        //     StalkFeature::Ptr stalk_tmp = stalkModels_[matchIdx];
+        //     stalk_tmp->cloud.insert(stalk_tmp->cloud.end(), stalk->cloud.begin(), stalk->cloud.end());
 
-            if (stalk_tmp->root(2) > stalk->root(2)){
-                stalk_tmp->root = stalk->root;
-            }
+        //     if (stalk_tmp->root(2) > stalk->root(2)){
+        //         stalk_tmp->root = stalk->root;
+        //     }
 
-            if (stalk_tmp->top(2) < stalk->top(2)){
-                stalk_tmp->top = stalk->top;
-            }
+        //     if (stalk_tmp->top(2) < stalk->top(2)){
+        //         stalk_tmp->top = stalk->top;
+        //     }
 
-            Eigen::Vector4f centroid;
-            pcl::compute3DCentroid(stalk_tmp->cloud, centroid);
+        //     Eigen::Vector4f centroid;
+        //     pcl::compute3DCentroid(stalk_tmp->cloud, centroid);
 
-            // Compute the point closest to the origin on the line
-            Eigen::Vector3f line_origin = centroid.head<3>();
+        //     // Compute the point closest to the origin on the line
+        //     Eigen::Vector3f line_origin = centroid.head<3>();
 
-            stalk_tmp->centroid = line_origin;
+        //     stalk_tmp->centroid = line_origin;
 
-            // Compute the eigenvalues and eigenvectors of the covariance matrix
-            Eigen::Matrix3f covariance;
-            pcl::computeCovarianceMatrixNormalized(stalk_tmp->cloud, centroid, covariance);
-            Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f> solver(covariance);
+        //     // Compute the eigenvalues and eigenvectors of the covariance matrix
+        //     Eigen::Matrix3f covariance;
+        //     pcl::computeCovarianceMatrixNormalized(stalk_tmp->cloud, centroid, covariance);
+        //     Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f> solver(covariance);
 
         
-            // Get the direction of the smallest eigenvalue, which is the line direction
-            Eigen::Vector3f line_direction = solver.eigenvectors().col(2);
-            if (line_direction(2) < 0) {
-                line_direction *= -1;
-            }
+        //     // Get the direction of the smallest eigenvalue, which is the line direction
+        //     Eigen::Vector3f line_direction = solver.eigenvectors().col(2);
+        //     if (line_direction(2) < 0) {
+        //         line_direction *= -1;
+        //     }
                 
-            stalk_tmp->direction = line_direction;
+        //     stalk_tmp->direction = line_direction;
 
-            float cloud_ratio = static_cast<float>(stalk->cloud.size()) / (stalk->cloud.size() + stalk_tmp->cloud.size());
-            // float cloud_ratio = stalk->cloud.size() % (stalk->cloud.size() + stalk_tmp->cloud.size());
+        //     float cloud_ratio = static_cast<float>(stalk->cloud.size()) / (stalk->cloud.size() + stalk_tmp->cloud.size());
+        //     // float cloud_ratio = stalk->cloud.size() % (stalk->cloud.size() + stalk_tmp->cloud.size());
 
-            pt.x = cloud_ratio * stalk->root(0) + (1-cloud_ratio) * stalk_tmp->root(0); 
-            pt.y = cloud_ratio * stalk->root(1) + (1-cloud_ratio) * stalk_tmp->root(1); 
-            pt.z = cloud_ratio * stalk->root(2) + (1-cloud_ratio) * stalk_tmp->root(2); 
+        //     pt.x = cloud_ratio * stalk->root(0) + (1-cloud_ratio) * stalk_tmp->root(0); 
+        //     pt.y = cloud_ratio * stalk->root(1) + (1-cloud_ratio) * stalk_tmp->root(1); 
+        //     pt.z = cloud_ratio * stalk->root(2) + (1-cloud_ratio) * stalk_tmp->root(2); 
             
-            // cout << "!!!!: " << stalk->root(0) << " " << stalk_tmp->root(0) << " " << pt.x << endl
-            // << stalk->root(1) << " " << stalk_tmp->root(1) << " " << pt.y <<  endl
-            // << stalk->root(2) << " " << stalk_tmp->root(2) << " " << pt.z << endl;
+        //     // cout << "!!!!: " << stalk->root(0) << " " << stalk_tmp->root(0) << " " << pt.x << endl
+        //     // << stalk->root(1) << " " << stalk_tmp->root(1) << " " << pt.y <<  endl
+        //     // << stalk->root(2) << " " << stalk_tmp->root(2) << " " << pt.z << endl;
 
-            // cout << "=====================================" << endl;
+        //     // cout << "=====================================" << endl;
 
-            landmarks_->points[matchIdx] = pt;
-            stalkModels_[matchIdx] = stalk_tmp; 
-        }
-        i++;
+        //     landmarks_->points[matchIdx] = pt;
+        //     stalkModels_[matchIdx] = stalk_tmp; 
+        // }
+        // i++;
     }
     matchesMap.clear();
 }
