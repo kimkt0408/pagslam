@@ -112,6 +112,7 @@ namespace pagslam
             Scalar stalkMatchThresh_;
             Scalar rangeGroundMatch_;
             Scalar AddNewStalkThreshDist_;
+            Scalar SkipStalkThreshDist_;
             int minStalkMatches_;
             int maxNumIterations_;
             Scalar huberLossThresh_;

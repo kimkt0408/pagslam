@@ -5,7 +5,7 @@ MapManager::MapManager(const float searchRadius){
     sqSearchRadius = searchRadius*searchRadius;
     searchThreshold = searchRadius;
     // mapStalkHits_ = 2; // SIM
-    mapStalkHits_ = 1; // ACRE
+    mapStalkHits_ = 4; // ACRE
     landmarks_.reset(new CloudT);
 }
 
@@ -97,17 +97,17 @@ void MapManager::updateMap(std::vector<StalkFeature::Ptr>& stalks, const std::ve
             landmarks_->push_back(pt);
             stalkModels_.push_back(stalk);
             stalkHits_.push_back(1);
-        } 
-        else {
+        }
+        else if (matches[i] != -2) {
             int matchIdx = matchesMap[matches[i]];
             stalkHits_[matchIdx] += 1;
             
             StalkFeature::Ptr stalk_tmp = stalkModels_[matchIdx];
             stalk_tmp->cloud.insert(stalk_tmp->cloud.end(), stalk->cloud.begin(), stalk->cloud.end());
 
-            // if (stalk_tmp->root(2) > stalk->root(2)){
-            //     stalk_tmp->root = stalk->root;
-            // }
+            if (stalk_tmp->root(2) > stalk->root(2)){
+                stalk_tmp->root = stalk->root;
+            }
 
             if (stalk_tmp->top(2) < stalk->top(2)){
                 stalk_tmp->top = stalk->top;
