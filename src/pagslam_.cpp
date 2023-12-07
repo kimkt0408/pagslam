@@ -778,7 +778,6 @@ namespace pagslam
 
         if(success){
             out[0] = params[2];
-            // out[0] = 0;
             out[1] = params[3];
             out[2] = params[4];
 
