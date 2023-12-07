@@ -98,5 +98,6 @@ namespace ext
             float min_z_addition_;
             float max_z_addition_;
             float offsetSearchRadius_;
+            float ransacDistanceThreshold_;
     };
 }

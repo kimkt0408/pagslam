@@ -571,9 +571,9 @@ namespace pagslam
 
                 // cout << root << " " << direction << endl;
 
-                // double weight = 1.0;
+                double weight = 1.0;
                 int n = 0;
-                double weight = 1e2/stalkMatch.sceneFeature->cloud.size();
+                // double weight = 1e2/stalkMatch.sceneFeature->cloud.size();
                 CloudT modelCloud = stalkMatch.modelFeature->cloud;
 
                 // cout << "!!!: " << stalkMatch.sceneFeature->cloud.size() << endl;
@@ -762,8 +762,8 @@ namespace pagslam
         options.parameter_tolerance = 1e-10;  // Adjust this value as needed.
         options.max_num_iterations = maxNumIterations_;
 
-        options.linear_solver_type = ceres::DENSE_QR;
-        // options.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;
+        // options.linear_solver_type = ceres::DENSE_QR;
+        options.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;
         // options.logging_type = ceres::SILENT;
         // options.logging_type = ceres::PER_MINIMIZER_ITERATION;
 
@@ -776,9 +776,8 @@ namespace pagslam
         // std::cout << summary.FullReport() << "\n" << summary.termination_type << " " << success << endl;
 
         if(success){
-            // out[0] = 0;
-
-            out[0] = params[2];
+            // out[0] = params[2];
+            out[0] = 0;
             out[1] = params[3];
             out[2] = params[4];
 
@@ -827,14 +826,13 @@ namespace pagslam
                 matchIndices[stalkCounter] = bestKey;
                 numMatch++;
 
-                // cout << "Existing: " << bestKey << ": " << bestDist << endl;
             }
-            else{
-                // cout << "New: " << bestKey << ": " << bestDist << endl;
-            }
+            // else{
+            //     // cout << "New: " << bestKey << ": " << bestDist << endl;
+            // }
             stalkCounter++;
         }
-        ROS_DEBUG_STREAM("Num map stalk matches: " << numMatch);
+        // ROS_DEBUG_STREAM("Num map stalk matches: " << numMatch);
     }
 
 
