@@ -37,13 +37,13 @@ namespace pagslam
         // huberLossThresh_ = 1; // 0.1
 
         // Range-view h_cloud
-        stalkMatchThresh_ = 0.10;  // 0.12 // 0.3
+        stalkMatchThresh_ = 0.12;  // 0.12 // 0.3
         minStalkMatches_ = 3; //2;
         rangeGroundMatch_ = 10; // 4
-        AddNewStalkThreshDist_ = stalkMatchThresh_*0.5;
+        AddNewStalkThreshDist_ = stalkMatchThresh_*0.3;
         SkipStalkThreshDist_ = stalkMatchThresh_;
-        maxNumIterations_ = 100;
-        huberLossThresh_ = 1; // 0.1
+        maxNumIterations_ = 1000;
+        huberLossThresh_ = 10; // 0.1
     }
 
 
@@ -283,7 +283,8 @@ namespace pagslam
             StalkFeature::Ptr bestMapFeature = nullptr;
 
             for (const auto &mf : mapFeatures) {
-                Scalar d = stalkDistance(cf_proj->root, mf->root);
+                // Scalar d = stalkDistance(cf_proj->root, mf->root);
+                Scalar d = stalkDistance(cf_proj->centroid, mf->centroid);
 
                 if (d < bestDist) {
                     bestDist = d;
@@ -560,8 +561,8 @@ namespace pagslam
             problem.AddParameterBlock(params, 6);
             // setting z, roll and pitch as constant
             ceres::SubsetParameterization *subset_parameterization =
-                // new ceres::SubsetParameterization(6, {2, 3, 4});
-                new ceres::SubsetParameterization(6, {1, 2, 3, 4});
+                new ceres::SubsetParameterization(6, {2, 3, 4});
+                // new ceres::SubsetParameterization(6, {1, 2, 3, 4});
             problem.SetParameterization(params, subset_parameterization);
 
             for (auto stalkMatch : stalkMatches){
@@ -777,7 +778,8 @@ namespace pagslam
         // std::cout << summary.FullReport() << "\n" << summary.termination_type << " " << success << endl;
 
         if(success){
-            out[0] = params[2];
+            // out[0] = params[2];
+            out[0] = 0;
             out[1] = params[3];
             out[2] = params[4];
 
@@ -808,7 +810,8 @@ namespace pagslam
 
             for (int j = 0; j < mapStalkFeatures.size(); ++j){
                 StalkFeature::Ptr mf = mapStalkFeatures[j];
-                Scalar d = stalkDistance(cf->root, mf->root);
+                // Scalar d = stalkDistance(cf->root, mf->root);
+                Scalar d = stalkDistance(cf->centroid, mf->centroid);
 
                 if (d < bestDist){
                     bestDist = d;

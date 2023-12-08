@@ -57,14 +57,14 @@ namespace ext
     // For Range-view h_cloud
     //   seedSearchRadius_(0.12),
     //   maxSeedZLimit_(0.5),
-      minSeedPts_(4),
+      minSeedPts_(6),
       nIterations_(100),
       minInliers_(30),      // new-ACRE-long
     //   toleranceR_(0.03),
     //   min_z_addition_(0.10),
     //   max_z_addition_(0.16),
       offsetSearchRadius_(0.10),
-      tan_vec_threshold_(0.3),
+      tan_vec_threshold_(1.0),
       ransacDistanceThreshold_(1.0)
     {}
     
@@ -337,8 +337,6 @@ namespace ext
                         closestPoint = currentPoint;
                     }
                 }
-
-
 
                 float searchRadius = minDistance + offsetSearchRadius_;  // radius of the search sphere
                 // float searchRadius = seedSearchRadius_;  // radius of the search sphere
