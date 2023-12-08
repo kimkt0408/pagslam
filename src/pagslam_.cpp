@@ -36,8 +36,16 @@ namespace pagslam
         // maxNumIterations_ = 100;
         // huberLossThresh_ = 1; // 0.1
 
-        // Range-view h_cloud
-        stalkMatchThresh_ = 0.12;  // 0.12 // 0.3
+        // // Range-view h_cloud
+        // stalkMatchThresh_ = 0.12;  // 0.12 // 0.3
+        // minStalkMatches_ = 3; //2;
+        // rangeGroundMatch_ = 10; // 4
+        // AddNewStalkThreshDist_ = stalkMatchThresh_*0.1;
+        // SkipStalkThreshDist_ = AddNewStalkThreshDist_*2.0;
+        // maxNumIterations_ = 1000;
+        // huberLossThresh_ = 10; // 0.1
+
+        stalkMatchThresh_ = 0.50;  // 0.12 // 0.3
         minStalkMatches_ = 3; //2;
         rangeGroundMatch_ = 10; // 4
         AddNewStalkThreshDist_ = stalkMatchThresh_*0.1;
