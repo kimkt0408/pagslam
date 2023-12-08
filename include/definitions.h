@@ -227,7 +227,13 @@ struct XYYawLineCost {
 
         for (const auto& pointInCloud : modelCloud.points) {
             Eigen::Matrix<T, 3, 1> cloud_point{T(pointInCloud.x), T(pointInCloud.y), T(pointInCloud.z)};
-            T distance = (cloud_point - last_point).norm();
+            // Create a 2D vector (Eigen::Matrix) from the first two elements
+            Eigen::Matrix<T, 2, 1> cloud_point_xy, last_point_xy;
+
+            cloud_point_xy << cloud_point(0), cloud_point(1);
+            last_point_xy << last_point(0), last_point(1);
+            
+            T distance = (cloud_point_xy - last_point_xy).norm();
             if (distance < minDistance) {
                 minDistance = distance;
             }
