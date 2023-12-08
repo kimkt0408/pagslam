@@ -44,6 +44,7 @@ namespace pagslam
         SkipStalkThreshDist_ = stalkMatchThresh_;
         maxNumIterations_ = 1000;
         huberLossThresh_ = 10; // 0.1
+        1
     }
 
 
