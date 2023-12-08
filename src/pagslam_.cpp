@@ -40,8 +40,8 @@ namespace pagslam
         stalkMatchThresh_ = 0.12;  // 0.12 // 0.3
         minStalkMatches_ = 3; //2;
         rangeGroundMatch_ = 10; // 4
-        AddNewStalkThreshDist_ = stalkMatchThresh_*0.4;
-        SkipStalkThreshDist_ = stalkMatchThresh_;
+        AddNewStalkThreshDist_ = stalkMatchThresh_*0.1;
+        SkipStalkThreshDist_ = AddNewStalkThreshDist_*2.0;
         maxNumIterations_ = 1000;
         huberLossThresh_ = 10; // 0.1
     }
