@@ -36,22 +36,22 @@ namespace pagslam
         // maxNumIterations_ = 100;
         // huberLossThresh_ = 1; // 0.1
 
-        // // Range-view h_cloud
-        // stalkMatchThresh_ = 0.12;  // 0.12 // 0.3
-        // minStalkMatches_ = 3; //2;
-        // rangeGroundMatch_ = 10; // 4
-        // AddNewStalkThreshDist_ = stalkMatchThresh_*0.1;
-        // SkipStalkThreshDist_ = AddNewStalkThreshDist_*2.0;
-        // maxNumIterations_ = 1000;
-        // huberLossThresh_ = 10; // 0.1
-
+        // Range-view h_cloud
         stalkMatchThresh_ = 0.25;  // 0.12 // 0.3
         minStalkMatches_ = 3; //2;
         rangeGroundMatch_ = 10; // 4
-        AddNewStalkThreshDist_ = stalkMatchThresh_*0.2;
+        AddNewStalkThreshDist_ = stalkMatchThresh_*0.20;
         SkipStalkThreshDist_ = AddNewStalkThreshDist_*2.0;
         maxNumIterations_ = 1000;
         huberLossThresh_ = 10; // 0.1
+
+        // stalkMatchThresh_ = 0.25;  // 0.12 // 0.3
+        // minStalkMatches_ = 3; //2;
+        // rangeGroundMatch_ = 10; // 4
+        // AddNewStalkThreshDist_ = stalkMatchThresh_*0.25;
+        // SkipStalkThreshDist_ = AddNewStalkThreshDist_*1.5;
+        // maxNumIterations_ = 1000;
+        // huberLossThresh_ = 1; // 0.1
     }
 
 
@@ -833,17 +833,17 @@ namespace pagslam
 
             // create feature matches according to model association
             if (bestDist < AddNewStalkThreshDist_){             // Case1: Matched with existing landmark
-                cout << "MATCHED: " << stalkCounter << ": " << bestDist << endl;
+                // cout << "MATCHED: " << stalkCounter << ": " << bestDist << endl;
                 matchIndices[stalkCounter] = bestKey;
                 // numMatch++;
 
             }
             else if (bestDist < SkipStalkThreshDist_){    
                 matchIndices[stalkCounter] = -2;
-                cout << "SKIP: " << stalkCounter << ": " << bestDist << endl;
+                // cout << "SKIP: " << stalkCounter << ": " << bestDist << endl;
             }
             else{                                               // Case2: Too far to register to the existing landmark
-                cout << "NEW: " << stalkCounter << ": " << bestDist << endl;
+                // cout << "NEW: " << stalkCounter << ": " << bestDist << endl;
             }
             stalkCounter++;
         }

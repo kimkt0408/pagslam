@@ -64,7 +64,7 @@ namespace ext
     //   min_z_addition_(0.10),
     //   max_z_addition_(0.16),
       offsetSearchRadius_(0.10),
-      tan_vec_threshold_(1.0),
+      tan_vec_threshold_(0.1),
       ransacDistanceThreshold_(1.0)
     {}
     

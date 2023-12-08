@@ -5,7 +5,7 @@ MapManager::MapManager(const float searchRadius){
     sqSearchRadius = searchRadius*searchRadius;
     searchThreshold = searchRadius;
     // mapStalkHits_ = 2; // SIM
-    mapStalkHits_ = 4; // ACRE
+    mapStalkHits_ = 3; // ACRE
     landmarks_.reset(new CloudT);
 }
 
