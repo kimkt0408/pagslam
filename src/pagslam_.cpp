@@ -283,7 +283,8 @@ namespace pagslam
             StalkFeature::Ptr bestMapFeature = nullptr;
 
             for (const auto &mf : mapFeatures) {
-                Scalar d = stalkDistance(cf_proj->root, mf->root);
+                // Scalar d = stalkDistance(cf_proj->root, mf->root);
+                Scalar d = stalkDistance(cf_proj->centroid, mf->centroid);
 
                 if (d < bestDist) {
                     bestDist = d;
@@ -809,7 +810,8 @@ namespace pagslam
 
             for (int j = 0; j < mapStalkFeatures.size(); ++j){
                 StalkFeature::Ptr mf = mapStalkFeatures[j];
-                Scalar d = stalkDistance(cf->root, mf->root);
+                // Scalar d = stalkDistance(cf->root, mf->root);
+                Scalar d = stalkDistance(cf->centroid, mf->centroid);
 
                 if (d < bestDist){
                     bestDist = d;
