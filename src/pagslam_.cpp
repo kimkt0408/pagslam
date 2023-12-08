@@ -561,8 +561,8 @@ namespace pagslam
             problem.AddParameterBlock(params, 6);
             // setting z, roll and pitch as constant
             ceres::SubsetParameterization *subset_parameterization =
-                // new ceres::SubsetParameterization(6, {2, 3, 4});
-                new ceres::SubsetParameterization(6, {1, 2, 3, 4});
+                new ceres::SubsetParameterization(6, {2, 3, 4});
+                // new ceres::SubsetParameterization(6, {1, 2, 3, 4});
             problem.SetParameterization(params, subset_parameterization);
 
             for (auto stalkMatch : stalkMatches){
