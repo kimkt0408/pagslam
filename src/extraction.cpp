@@ -63,8 +63,8 @@ namespace ext
     //   toleranceR_(0.03),
     //   min_z_addition_(0.10),
     //   max_z_addition_(0.16),
-      offsetSearchRadius_(0.10),
-      tan_vec_threshold_(0.1),
+      offsetSearchRadius_(0.05),
+      tan_vec_threshold_(0.3),
       ransacDistanceThreshold_(1.0)
     {}
     
