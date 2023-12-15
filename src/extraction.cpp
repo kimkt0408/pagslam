@@ -57,7 +57,7 @@ namespace ext
     // For Range-view h_cloud
     //   seedSearchRadius_(0.12),
     //   maxSeedZLimit_(0.5),
-      minSeedPts_(6),
+      minSeedPts_(4),
       nIterations_(100),
       minInliers_(30),      // new-ACRE-long
     //   toleranceR_(0.03),

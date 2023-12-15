@@ -37,10 +37,10 @@ namespace pagslam
         // huberLossThresh_ = 1; // 0.1
 
         // Range-view h_cloud
-        stalkMatchThresh_ = 0.14;  // 0.12 // 0.3
+        stalkMatchThresh_ = 0.12;  // 0.12 // 0.3
         minStalkMatches_ = 3; //2;
         rangeGroundMatch_ = 10; // 4
-        AddNewStalkThreshDist_ = stalkMatchThresh_*0.7;
+        AddNewStalkThreshDist_ = stalkMatchThresh_*0.9;
         SkipStalkThreshDist_ = stalkMatchThresh_;
         maxNumIterations_ = 100;
         huberLossThresh_ = 10; // 0.1
@@ -579,13 +579,17 @@ namespace pagslam
 
                 // cout << "!!!: " << stalkMatch.sceneFeature->cloud.size() << endl;
                 for (auto point : stalkMatch.sceneFeature->cloud){
-                    Vector3 pt (point.x, point.y, point.z);
-                    ceres::CostFunction* cost =
-                        new ceres::AutoDiffCostFunction<XYYawLineCost, 1, 6>(
-                            new XYYawLineCost(pt, root, direction, modelCloud, weight));
-                            // new XYYawLineCost(pt, root, direction, weight));
-                    problem.AddResidualBlock(cost, loss, params);
-                    n = n + 1;
+                    // if (n == 0){
+                        Vector3 pt (point.x, point.y, point.z);
+                        ceres::CostFunction* cost =
+                            new ceres::AutoDiffCostFunction<XYYawLineCost, 1, 6>(
+                                new XYYawLineCost(pt, root, direction, modelCloud, weight));
+                                // new XYYawLineCost(pt, root, direction, weight));
+                        problem.AddResidualBlock(cost, loss, params);
+                        n = n + 1;
+                    //     break;
+                    // }
+                    
                     // cout << "&&&: " << problem.NumResidualBlocks() << endl;
                 }
                 // cout << "???: " << n << endl;
