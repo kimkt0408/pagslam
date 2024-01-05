@@ -31,7 +31,7 @@
 
   <!-- Spawn Jackal -->
   <include file="$(find jackal_gazebo)/launch/spawn_jackal_2lidar.launch">
-    <arg name="x" value="5.0" />
+    <arg name="x" value="0.0" />
     <arg name="y" value="0" />
     <arg name="z" value="1.0" />
     <arg name="yaw" value="0" />
