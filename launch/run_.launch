@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
-    <node pkg="pagslam" type="inputNode" name="inputNode" launch-prefix="valgrind" output="screen">
+    <node pkg="pagslam" type="inputNode" name="inputNode" launch-prefix="valgrind --leak-check=full --track-origins=yes" output="screen">
     </node>
 <!-- 
     <node pkg="pagslam" type="inputNode_" name="inputNode" output="screen">
