@@ -3,7 +3,7 @@
   <arg name="gui" default="true" />
   <arg name="headless" default="false" />
   <!-- <arg name="world_name" default="$(find pagslam)/world/large_cornfield.sdf" /> -->
-  <arg name="world_name" default="$(find pagslam)/world/large_cornfield3.sdf" />
+  <arg name="world_name" default="$(find pagslam)/world/large_cornfield4.sdf" />
   
 
   <!-- Short-term hack to support the original front_laser:=true argument for spawning
