@@ -14,6 +14,8 @@
 #include <definitions.h>
 #include <pagslamNode.h>
 
+#include <chrono>
+
 enum
 {
     CLOUD_TOO_OLD,  // 0
@@ -438,15 +440,30 @@ int main(int argc, char **argv)
 
     InputManager in(n);
 
-    ros::Rate r(20); // 10 hz
+    double total_latency = 0.0;
+    int count = 0;
+
+    ros::Rate r(20); // 20 hz
     while (ros::ok()){
         for (auto i = 0; i < 10; ++i){
             ros::spinOnce();    // spinOnce(): it allows ROS to process any incoming messages and call any callbacks that are associated with the node's subscribers.   
-            if (i % 5 == 0){
+            // if (i % 5 == 0){    
+                auto input_time = std::chrono::high_resolution_clock::now();
                 in.Run();
-            }
-            r.sleep();
+                auto output_time = std::chrono::high_resolution_clock::now();
+                std::chrono::duration<double, std::milli> latency = output_time - input_time;
+                std::cout << "1 System latency: " << latency.count() << " ms\n";
+
+                total_latency += latency.count();
+                count++;
+                  
+            // }    
+            r.sleep();          
         }
     }
+
+    double avg_latency = total_latency / count;
+    std::cout << "1 Average system latency: " << avg_latency << " " << count << " ms\n";
+
     return 0;
 }
