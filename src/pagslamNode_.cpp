@@ -368,11 +368,13 @@ namespace pagslam
                 // pubMapTotalCloud_.publish(viz_mapTotalCloud);
 
                 // visualization_msgs::MarkerArray viz_stalkVector = mapCloudVisualization(pagslamIn.mapStalkFeatures);
-                visualization_msgs::MarkerArray viz_stalkVector = mapCloudVisualization(semantic_map);
-                pubMapCloudMarker_.publish(viz_stalkVector);
 
-                visualization_msgs::MarkerArray viz_mapTopCloud = mapTopCloudVisualization(semantic_map);
-                pubMapTopPointMarker_.publish(viz_mapTopCloud);
+                // Comment when it visualization is not required
+                // visualization_msgs::MarkerArray viz_stalkVector = mapCloudVisualization(semantic_map);
+                // pubMapCloudMarker_.publish(viz_stalkVector);
+
+                // visualization_msgs::MarkerArray viz_mapTopCloud = mapTopCloudVisualization(semantic_map);
+                // pubMapTopPointMarker_.publish(viz_mapTopCloud);
                 
                 // Convert the SE3 transform to a PoseStamped message
                 // geometry_msgs::PoseStamped pose_msg;

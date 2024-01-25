@@ -764,6 +764,7 @@ namespace pagslam
         
         // std::cout << summary.FullReport() << "\n" << summary.termination_type << " " << success << endl;
             
+        // For Dual LiDAR (Vertical/Horizontal LiDAR)
         if(success){
             out[0] = params[2];
             out[1] = params[3];
@@ -778,6 +779,13 @@ namespace pagslam
 
             ROS_DEBUG_STREAM("ZRollPitch: NOT Optimized After " << out[0] << " " << out[1] << " " << out[2]); 
         }
+
+        // // For Single LiDAR (Vertical LiDAR)
+        // out[0] = t[2];  
+        // out[1] = rpy[0];
+        // out[2] = rpy[1];
+
+        // ROS_DEBUG_STREAM("ZRollPitch: NOT Optimized After " << out[0] << " " << out[1] << " " << out[2]); 
     }
     
 
