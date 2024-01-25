@@ -1,6 +1,6 @@
 <launch>
     <!-- Play rosbag files -->
-    <include file="$(find robot_setup_tf)/launch/rosbag_play_slam.launch" />
+    <include file="$(find pagslam)/launch/rosbag_play.launch" />
     
     <!-- 0. Noisy -->
     <!-- <node pkg="pagslam" type="noise_odometry.py" name="noise_odometry" output="screen" /> -->

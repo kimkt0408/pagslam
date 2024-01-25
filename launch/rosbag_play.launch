@@ -1,0 +1,70 @@
+<launch>
+    <!-- 2. Velodyne -->
+    <!-- <arg name="rviz"   value="/home/kimkt0408/Desktop/IoT4Ag/rviz/icra23.rviz" /> -->
+
+    <!-- <arg name="bagfile_abs_path"   value="/home/kimkt0408/2022-02-01-16-56-07.bag" /> Simulation (test) -->
+
+    <!-- (3)-1. Simulation with a nonflat ground (forward) -->
+    <!-- <arg name="bagfile_abs_path"   value="/home/kimkt0408/catkin_ws/src/pagslam/data/forwardCornfield.bag" />      -->
+
+    <!-- (3)-2. Simulation with a nonflat ground (forward, w IMU) -->
+    <!-- <arg name="bagfile_abs_path"   value="/home/kimkt0408/catkin_ws/src/pagslam/data/forwardCornfield_imu.bag" />      -->
+
+    <!-- (3)-3. Simulation with a nonflat ground (u-turn) -->
+    <!-- <arg name="bagfile_abs_path"   value="/home/kimkt0408/catkin_ws/src/pagslam/data/uTurnCornfield.bag" />     -->
+
+    <!-- (3)-4. Simulation with a nonflat ground (u-turn, w IMU) -->
+    <!-- <arg name="bagfile_abs_path"   value="/home/kimkt0408/catkin_ws/src/pagslam/data/uTurnCornfield_imu.bag" />     -->
+    <!-- <arg name="bagfile_abs_path"   value="/home/kimkt0408/catkin_ws/src/pagslam/data/uTurnCornfield_imu2.bag" />     -->
+
+    <!-- (3)-5. Simulation with a nonflat ground (loop, w IMU) -->
+    <!-- <arg name="bagfile_abs_path"   value="/home/kimkt0408/catkin_ws/src/pagslam/data/loopCornfield_imu.bag" />     -->
+    <!-- <arg name="bagfile_abs_path"   value="/home/kimkt0408/catkin_ws/src/pagslam/data/loopCornfield_imu_noise.bag" />     -->
+
+    <!-- (3)-6. Simulation with a nonflat ground (multiple loops, w IMU) -->
+    <!-- <arg name="bagfile_abs_path"   value="/home/kimkt0408/catkin_ws/src/pagslam/data/loopCornfield_imu2.bag" />     -->
+
+    <!-- (0)-2. Provide wheel odometry with noise -->
+    <!-- <node pkg="pagslam" type="noise_odometry.py" name="noise_odometry" output="screen" /> -->
+
+    <!-- ********************************************************************* -->
+
+    
+    <!-- RA-L -->
+    <!-- <arg name="bagfile_abs_path"   value="/home/kimkt0408/bagfiles/2023-09-21-12-57-44.bag" /> -->
+    <!-- (multiple/mid)-->
+    <!-- <arg name="bagfile_abs_path"   value="/home/kimkt0408/bagfiles/2023-09-21-12-33-19.bag" /> -->
+    <!-- (multiple/short)-->
+    <arg name="bagfile_abs_path"   value="/home/kimkt0408/bagfiles/2023-09-21-11-16-29.bag" />  
+
+    <!-- ACRE -->
+
+    <!-- <arg name="bagfile_abs_path"   value="/home/kimkt0408/bagfiles/2023-07-29-12-22-29.bag" />  -->
+    <!-- <arg name="bagfile_abs_path"   value="/home/kimkt0408/bagfiles/2023-09-21-12-57-44.bag" /> -->
+    <!-- <arg name="bagfile_abs_path"   value="/home/kimkt0408/bagfiles/2023-09-21-13-28-03.bag" /> -->
+    <!-- <arg name="bagfile_abs_path"   value="/home/kimkt0408/bagfiles/2023-09-14-13-00-45.bag" /> -->
+
+    <!-- <arg name="bagfile_abs_path"   value="/media/kimkt0408/T7/IoT4Ag/bagfiles/2023-06-28-10-29-29.bag" />     -->
+    <!-- <arg name="bagfile_abs_path"   value="/media/kimkt0408/T7/IoT4Ag/bagfiles/2023-08-01-11-24-19.bag" />     -->
+
+    <!-- <arg name="bagfile_abs_path"   value="/home/kimkt0408/2022-11-29-11-31-15.bag" />        -->
+
+
+    <!-- <arg name="bagfile_abs_path"   value="/media/kimkt0408/T7/IoT4Ag/bagfiles/2023/2023-07-29-12-22-29.bag" /> -->
+    <!-- <arg name="bagfile_abs_path"   value="/media/kimkt0408/T7/IoT4Ag/bagfiles/2023/loopCornfield_imu2_sim.bag" /> -->
+
+    <!-- rosbag play -->
+    <!-- <param name="/use_sim_time" value="true" /> -->
+    <node pkg="rosbag" type="play" name="rosplay"
+        args="-r 1 --clock $(arg bagfile_abs_path)" />
+
+        <!-- output="screen" /> -->
+
+    <!-- Rviz visualization -->
+    <!-- <arg name="rviz"   value="/home/kimkt0408/rviz/gtsam.rviz" />  -->
+    <!-- <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rviz)" /> -->
+
+    <!-- static_transform_publisher -->
+    <node pkg="tf2_ros" type="static_transform_publisher" name="base_to_velodyne1" args="-0.155 0 0.402 -3.141592653 0 0 base_link velodyne1" />
+    <node pkg="tf2_ros" type="static_transform_publisher" name="base_to_velodyne2" args="-0.266 0 0.292 1.570796327 0 -1.570796327 base_link velodyne2" />
+</launch>
