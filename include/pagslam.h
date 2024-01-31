@@ -107,6 +107,7 @@ namespace pagslam
             SE3 T_Map_Anchor_; // Pose of ANCHOR frame in the Map frame
             bool firstScan_;
             bool bool_groundMatch_;
+            bool bool_dualLiDAR_;
 
             std::vector<GroundFeature> prevGroundFeatures_;
             Scalar stalkMatchThresh_;

@@ -6,6 +6,7 @@ namespace pagslam
         T_Map_Anchor_ = SE3();
         firstScan_ = true;    
         bool_groundMatch_ = false;
+        bool_dualLiDAR_ = false;
 
         // (1) Simulation        
         // stalkMatchThresh_ = 0.12;  // 0.12 // 0.3 
@@ -765,27 +766,31 @@ namespace pagslam
         // std::cout << summary.FullReport() << "\n" << summary.termination_type << " " << success << endl;
             
         // For Dual LiDAR (Vertical/Horizontal LiDAR)
-        if(success){
+        if (bool_dualLiDAR_){
+            if(success){
             out[0] = params[2];
             out[1] = params[3];
             out[2] = params[4];
             
             ROS_DEBUG_STREAM("ZRollPitch: Optimized After " << out[0] << " " << out[1] << " " << out[2]); 
+            }
+            else{
+                out[0] = t[2];
+                out[1] = rpy[0];
+                out[2] = rpy[1];
+
+                ROS_DEBUG_STREAM("ZRollPitch: NOT Optimized After " << out[0] << " " << out[1] << " " << out[2]); 
+            }
         }
         else{
-            out[0] = t[2];
+            // For Single LiDAR (Vertical LiDAR)
+            out[0] = t[2];  
             out[1] = rpy[0];
             out[2] = rpy[1];
 
             ROS_DEBUG_STREAM("ZRollPitch: NOT Optimized After " << out[0] << " " << out[1] << " " << out[2]); 
         }
-
-        // // For Single LiDAR (Vertical LiDAR)
-        // out[0] = t[2];  
-        // out[1] = rpy[0];
-        // out[2] = rpy[1];
-
-        // ROS_DEBUG_STREAM("ZRollPitch: NOT Optimized After " << out[0] << " " << out[1] << " " << out[2]); 
+        
     }
     
 
