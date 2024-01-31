@@ -106,7 +106,7 @@ InputManager::InputManager(ros::NodeHandle nh) : nh_(nh), tf_listener_{tf_buffer
     // nh_.param<float>("max_time_difference", maxTimeDifference_, 0.05); //0.05
     // (2) new-ACRE-long
     nh_.param<float>("min_odom_distance", minOdomDistance_, 0.1); //0.05
-    nh_.param<float>("max_time_difference", maxTimeDifference_, 0.1); //0.05
+    nh_.param<float>("max_time_difference", maxTimeDifference_, 0.05); //0.05
 
     odomFreqFilter_ = nh_.param("odom_freq_filter", 1);
 
@@ -179,10 +179,10 @@ void InputManager::OdomCb_(const nav_msgs::OdometryConstPtr &odom_msg)
 // (1) Horizontal LiDAR
 void InputManager::h_PCCb_(const sensor_msgs::PointCloud2ConstPtr &h_cloudMsg)
 {
-    h_pcQueue_.push(h_cloudMsg);
-    if (h_pcQueue_.size() > maxQueueSize_){
-        h_pcQueue_.pop();
-    }
+    // h_pcQueue_.push(h_cloudMsg);
+    // if (h_pcQueue_.size() > maxQueueSize_){
+    //     h_pcQueue_.pop();
+    // }
 }
 
 
@@ -192,6 +192,10 @@ void InputManager::v_PCCb_(const sensor_msgs::PointCloud2ConstPtr &v_cloudMsg)
     v_pcQueue_.push(v_cloudMsg);
     if (v_pcQueue_.size() > maxQueueSize_){
         v_pcQueue_.pop();
+    }
+    h_pcQueue_.push(v_cloudMsg);
+    if (h_pcQueue_.size() > maxQueueSize_){
+        h_pcQueue_.pop();
     }
 }
 

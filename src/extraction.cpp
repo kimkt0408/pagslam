@@ -258,6 +258,7 @@ namespace ext
         float minZLimit = ground_z_value + min_z_addition_;
         float maxZLimit = ground_z_value + max_z_addition_;
 
+        // ROS_DEBUG_STREAM("MIN_MAX: " << ground_z_value << " " << minZLimit << " " << maxZLimit); 
         filterByZ(inCloud, filteredZInCloud, minZLimit, maxZLimit);
         // cout << "FILTERED: " << filteredZInCloud->size() << endl;
         // printPointCloud(filteredZInCloud);
