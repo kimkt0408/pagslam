@@ -7,7 +7,7 @@ namespace pagslam
 {
     PAGSLAMNode::PAGSLAMNode(const ros::NodeHandle &nh) : nh_(nh)
     {
-        debugMode_ = nh_.param("debug_mode", false);
+        debugMode_ = nh_.param("debug_mode", true);
 
         if (debugMode_){
             ROS_DEBUG_STREAM("Running PAGSLAM in Debug Mode" << std::endl);
@@ -127,7 +127,60 @@ namespace pagslam
     }
 
 
-    bool PAGSLAMNode::groundExtraction(CloudT::Ptr& h_cloud, PagslamInput& pagslamIn)
+    // (1) For dual LiDARs
+    // bool PAGSLAMNode::groundExtraction(CloudT::Ptr& h_cloud, PagslamInput& pagslamIn)
+    // {
+    //     CloudT::Ptr groundCloud(new CloudT());
+    //     CloudT::Ptr groundCloud_outlier(new CloudT());
+    //     pcl::ModelCoefficients::Ptr groundCoefficients (new pcl::ModelCoefficients);
+               
+    //     // ******** (1) Ground plane *********        
+    //     // Filter the point cloud to use points with negative z-values
+    //     pcl::PassThrough<PointT> pass;
+    //     pass.setInputCloud(h_cloud);
+    //     pass.setFilterFieldName("z");
+    //     // (1) SIM
+    //     // pass.setFilterLimits(-1.0, -0.2);  // Set the filter limits for negative z-values
+    //     // pass.setFilterLimits(-1.0, -0.5);  // Set the filter limits for negative z-values
+        
+    //     // (2) ACRE
+    //     pass.setFilterLimits(-1.0, -0.5);  // Set the filter limits for negative z-values
+    //     // pass.setFilterLimitsNegative(false);  // Keep points inside the limits
+    //     pass.filter(*h_cloud);
+
+    //     extractor_->ransac(h_cloud, groundCloud, groundCloud_outlier, groundCoefficients);
+        
+    //     // Transform the point cloud and model coefficients to robot_frame
+    //     bool_groundTransformFrame_ = transformFrame(h_lidar_frame_id_, robot_frame_id_, tf_groundSourceToTarget_);
+
+    //     if (bool_groundTransformFrame_){
+    //         extractor_->transformGroundPlane(tf_groundSourceToTarget_, groundCloud, groundCoefficients, pagslamIn);
+
+    //         // if (debugMode_){   
+    //             pubGroundCloud_.publish(pagslamIn.groundFeature.cloud);
+    //             groundPlaneVisualization(pagslamIn.groundFeature.coefficients);
+    //         // }
+
+    //         if (pagslamIn.groundFeature.coefficients->values[3] < 0 ||
+    //         abs(pagslamIn.groundFeature.coefficients->values[3]/pagslamIn.groundFeature.coefficients->values[2]) > 1){    // If the extracted ground plane is not accurate
+    //             return false;
+    //         }            
+    //     }
+
+    //     // if (debugMode_){   
+    //     //     pubGroundCloud_.publish(pagslamIn.groundFeature.cloud);
+    //     //     groundPlaneVisualization(pagslamIn.groundFeature.coefficients);
+    //     // }
+    //     if (debugMode_){   
+    //         pubHCloud_.publish(h_cloud);
+    //     }
+
+    //     return true;
+    // }
+
+    
+    // (2) For a single LiDAR (vertical LiDAR)
+    bool PAGSLAMNode::groundExtraction(CloudT::Ptr& v_cloud, PagslamInput& pagslamIn)
     {
         CloudT::Ptr groundCloud(new CloudT());
         CloudT::Ptr groundCloud_outlier(new CloudT());
@@ -136,21 +189,21 @@ namespace pagslam
         // ******** (1) Ground plane *********        
         // Filter the point cloud to use points with negative z-values
         pcl::PassThrough<PointT> pass;
-        pass.setInputCloud(h_cloud);
-        pass.setFilterFieldName("z");
+        pass.setInputCloud(v_cloud);
+        pass.setFilterFieldName("y");
         // (1) SIM
         // pass.setFilterLimits(-1.0, -0.2);  // Set the filter limits for negative z-values
         // pass.setFilterLimits(-1.0, -0.5);  // Set the filter limits for negative z-values
         
         // (2) ACRE
-        pass.setFilterLimits(-1.0, -0.5);  // Set the filter limits for negative z-values
+        pass.setFilterLimits(0.3, 0.5);  // Set the filter limits for positive y-values
         // pass.setFilterLimitsNegative(false);  // Keep points inside the limits
-        pass.filter(*h_cloud);
+        pass.filter(*v_cloud);
 
-        extractor_->ransac(h_cloud, groundCloud, groundCloud_outlier, groundCoefficients);
+        extractor_->ransac(v_cloud, groundCloud, groundCloud_outlier, groundCoefficients);
         
         // Transform the point cloud and model coefficients to robot_frame
-        bool_groundTransformFrame_ = transformFrame(h_lidar_frame_id_, robot_frame_id_, tf_groundSourceToTarget_);
+        bool_groundTransformFrame_ = transformFrame(v_lidar_frame_id_, robot_frame_id_, tf_groundSourceToTarget_);
 
         if (bool_groundTransformFrame_){
             extractor_->transformGroundPlane(tf_groundSourceToTarget_, groundCloud, groundCoefficients, pagslamIn);
@@ -166,12 +219,12 @@ namespace pagslam
             }            
         }
 
-        // if (debugMode_){   
-        //     pubGroundCloud_.publish(pagslamIn.groundFeature.cloud);
-        //     groundPlaneVisualization(pagslamIn.groundFeature.coefficients);
-        // }
         if (debugMode_){   
-            pubHCloud_.publish(h_cloud);
+            pubGroundCloud_.publish(pagslamIn.groundFeature.cloud);
+            groundPlaneVisualization(pagslamIn.groundFeature.coefficients);
+        }
+        if (debugMode_){   
+            pubHCloud_.publish(v_cloud);
         }
 
         return true;
@@ -303,8 +356,8 @@ namespace pagslam
         ROS_DEBUG_STREAM("Entering Callback. Lidar data stamp: " << odom.stamp);
 
         // SEGMENTATION
-        // bool_ground_ = groundExtraction(v_cloud, pagslamIn);
-        bool_ground_ = groundExtraction(h_cloud, pagslamIn);
+        bool_ground_ = groundExtraction(v_cloud, pagslamIn);
+        // bool_ground_ = groundExtraction(h_cloud, pagslamIn);
         bool_stalk_ = stalkExtraction(v_cloud, pagslamIn);    
 
         bool success = runPagslam(pagslamIn, pagslamOut);

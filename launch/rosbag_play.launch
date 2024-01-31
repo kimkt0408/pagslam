@@ -33,9 +33,9 @@
     <!-- RA-L -->
     <!-- <arg name="bagfile_abs_path"   value="/home/kimkt0408/bagfiles/2023-09-21-12-57-44.bag" /> -->
     <!-- (multiple/mid)-->
-    <!-- <arg name="bagfile_abs_path"   value="/home/kimkt0408/bagfiles/2023-09-21-12-33-19.bag" /> -->
+    <arg name="bagfile_abs_path"   value="/home/kimkt0408/bagfiles/2023-09-21-12-33-19.bag" />
     <!-- (multiple/short)-->
-    <arg name="bagfile_abs_path"   value="/home/kimkt0408/bagfiles/2023-09-21-11-16-29.bag" />  
+    <!-- <arg name="bagfile_abs_path"   value="/home/kimkt0408/bagfiles/2023-09-21-11-16-29.bag" />   -->
 
     <!-- Test -->
     <!-- <arg name="bagfile_abs_path"   value="/home/kimkt0408/Downloads/test2.bag" />   -->
