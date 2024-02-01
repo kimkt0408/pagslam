@@ -33,12 +33,14 @@
     <!-- RA-L -->
     <!-- <arg name="bagfile_abs_path"   value="/home/kimkt0408/bagfiles/2023-09-21-12-57-44.bag" /> -->
     <!-- (multiple/mid)-->
-    <arg name="bagfile_abs_path"   value="/home/kimkt0408/bagfiles/2023-09-21-12-33-19.bag" />
+    <!-- <arg name="bagfile_abs_path"   value="/home/kimkt0408/bagfiles/2023-09-21-12-33-19.bag" /> -->
     <!-- (multiple/short)-->
     <!-- <arg name="bagfile_abs_path"   value="/home/kimkt0408/bagfiles/2023-09-21-11-16-29.bag" />   -->
 
     <!-- Test -->
-    <!-- <arg name="bagfile_abs_path"   value="/home/kimkt0408/Downloads/test2.bag" />   -->
+    <!-- For filtered rosbag files (opensource dataset) -->
+    <arg name="bagfile_abs_path"   value="/home/kimkt0408/Downloads/test.bag" />  
+    <node pkg="tf2_ros" type="static_transform_publisher" name="base_to_imu" args="0 0 0 0 0 0 base_link imu_link" />
 
     <!-- ACRE -->
 
@@ -68,6 +70,8 @@
     <!-- <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rviz)" /> -->
 
     <!-- static_transform_publisher -->
+    
+    
     <node pkg="tf2_ros" type="static_transform_publisher" name="base_to_velodyne1" args="-0.155 0 0.402 -3.141592653 0 0 base_link velodyne1" />
     <node pkg="tf2_ros" type="static_transform_publisher" name="base_to_velodyne2" args="-0.266 0 0.292 1.570796327 0 -1.570796327 base_link velodyne2" />
 </launch>
