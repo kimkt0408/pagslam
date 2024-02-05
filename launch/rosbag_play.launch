@@ -39,7 +39,7 @@
 
     <!-- Test -->
     <!-- For filtered rosbag files (opensource dataset) -->
-    <arg name="bagfile_abs_path"   value="/home/kimkt0408/Downloads/test.bag" />  
+    <arg name="bagfile_abs_path"   value="/home/kimkt0408/Downloads/2023-09-21-12-33-19-1.bag" />  
     <node pkg="tf2_ros" type="static_transform_publisher" name="base_to_imu" args="0 0 0 0 0 0 base_link imu_link" />
 
     <!-- ACRE -->
