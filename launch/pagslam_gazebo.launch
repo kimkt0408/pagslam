@@ -3,7 +3,9 @@
   <arg name="gui" default="true" />
   <arg name="headless" default="false" />
   <arg name="world_name" default="$(find pagslam)/world/large_cornfield5.sdf" />
+  <!-- <arg name="world_name" default="$(find pagslam)/world/large_cornfield6.sdf" /> -->
   <!-- <arg name="world_name" default="$(find jackal_gazebo)/worlds/jackal_race.world" /> -->
+  <!-- <arg name="world_name" default="$(find virtual_maize_field)/result/generated.world" /> -->
   
 
   <!-- Short-term hack to support the original front_laser:=true argument for spawning

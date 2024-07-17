@@ -79,6 +79,7 @@ class InputManager
         std::vector<SE3> keyPoses_;
         StampedSE3 latestOdom;
         bool firstOdom_;
+        float firstOdomOrientation_;
         bool publishTf_;
         bool success_;
         size_t odomCounter_;
@@ -103,7 +104,7 @@ InputManager::InputManager(ros::NodeHandle nh) : nh_(nh), tf_listener_{tf_buffer
     // nh_.param<float>("min_odom_distance", minOdomDistance_, 0.01); //0.05
     // nh_.param<float>("max_time_difference", maxTimeDifference_, 0.05); //0.05
     // (2) new-ACRE-long
-    nh_.param<float>("min_odom_distance", minOdomDistance_, 0.1); //0.05
+    nh_.param<float>("min_odom_distance", minOdomDistance_, 0.2); //0.1, 0.05
     nh_.param<float>("max_time_difference", maxTimeDifference_, 0.05); //0.05
 
     odomFreqFilter_ = nh_.param("odom_freq_filter", 1);
@@ -112,6 +113,8 @@ InputManager::InputManager(ros::NodeHandle nh) : nh_(nh), tf_listener_{tf_buffer
     // odomFreqFilter_ = nh_.param("odom_freq_filter", 20);
 
     publishTf_ = nh_.param("publish_tf", true);
+
+    nh_.param<float>("rirst_odom_orientation", firstOdomOrientation_, M_PI / 180 * 90); //0.1, 0.05
 
     nh_.param<std::string>("robot_frame_id", robot_frame_id_, "base_link");
     nh_.param<std::string>("odom_frame_id", odom_frame_id_, "odom");
@@ -250,7 +253,18 @@ bool InputManager::callPAGSLAM(SE3 relativeMotion, StampedSE3 odom)
     if (r == CLOUD_FOUND){
         odomQueue_.pop_front();
         SE3 keyPose = SE3();
-        SE3 prevKeyPose = firstOdom_ ? SE3() : keyPoses_[keyPoses_.size() - 1];
+        // SE3 prevKeyPose = firstOdom_ ? SE3() : keyPoses_[keyPoses_.size() - 1];
+        
+        // Initialize prevKeyPose with a 90-degree yaw rotation if firstOdom_ is true
+        SE3 prevKeyPose;
+        if (firstOdom_) {
+            Eigen::Vector3d translation(0, 0, 0);
+            Eigen::Quaterniond rotation(Eigen::AngleAxisd(firstOdomOrientation_, Eigen::Vector3d::UnitZ())); // 90 degrees around Z axis
+            prevKeyPose = SE3(rotation, translation);
+        } else {
+            prevKeyPose = keyPoses_.back();
+        }
+
         pcl_conversions::toPCL(odom.stamp, h_cloud->header.stamp);
         pcl_conversions::toPCL(odom.stamp, v_cloud->header.stamp);
         

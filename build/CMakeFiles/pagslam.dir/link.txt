@@ -1,0 +1,1 @@
+/usr/bin/c++ -fPIC -g -shared -Wl,-soname,libpagslam.so -o devel/lib/libpagslam.so CMakeFiles/pagslam.dir/src/pagslam_.cpp.o  -Wl,-rpath,/usr/local/lib /usr/local/lib/libceres.a -lpthread /usr/local/lib/libglog.so.0.6.0 -llapack -lf77blas -latlas 

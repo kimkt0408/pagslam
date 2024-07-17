@@ -1,0 +1,8 @@
+prefix=/usr/local
+
+Name: pagslam
+Description: Description of pagslam
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

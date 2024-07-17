@@ -35,7 +35,12 @@
     <!-- (multiple/mid)-->
     <!-- <arg name="bagfile_abs_path"   value="/home/kimkt0408/bagfiles/2023-09-21-12-33-19.bag" /> -->
     <!-- (multiple/short)-->
-    <arg name="bagfile_abs_path"   value="/home/kimkt0408/bagfiles/2023-09-21-11-16-29.bag" />  
+    <!-- <arg name="bagfile_abs_path"   value="/home/kimkt0408/bagfiles/2023-09-21-11-16-29.bag" />   -->
+
+    <!-- ACRE2024 -->
+    <!-- <arg name="bagfile_abs_path"   value="/home/kimkt0408/bagfiles/2024-06-17-10-09-49.bag" />   -->
+    <arg name="bagfile_abs_path"   value="/media/kimkt0408/T7/IoT4Ag/bagfiles/2024-07-12-16-46-00.bag" /> 
+
 
     <!-- Test -->
     <!-- For filtered rosbag files (opensource dataset) -->
@@ -66,12 +71,10 @@
         <!-- output="screen" /> -->
 
     <!-- Rviz visualization -->
-    <!-- <arg name="rviz"   value="/home/kimkt0408/rviz/gtsam.rviz" />  -->
-    <!-- <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rviz)" /> -->
+    <!-- <arg name="rviz"   value="/home/kimkt0408/rviz/gtsam.rviz" /> 
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rviz)" /> -->
 
-    <!-- static_transform_publisher -->
-    
-    
+    <!-- static_transform_publisher -->    
     <node pkg="tf2_ros" type="static_transform_publisher" name="base_to_velodyne1" args="-0.155 0 0.402 -3.141592653 0 0 base_link velodyne1" />
     <node pkg="tf2_ros" type="static_transform_publisher" name="base_to_velodyne2" args="-0.266 0 0.292 1.570796327 0 -1.570796327 base_link velodyne2" />
 </launch>

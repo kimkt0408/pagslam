@@ -1,0 +1,2 @@
+- setup-file:
+    local-name: /home/kimkt0408/catkin_ws/src/pagslam/build/devel/setup.sh

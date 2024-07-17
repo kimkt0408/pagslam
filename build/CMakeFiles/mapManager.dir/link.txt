@@ -1,0 +1,1 @@
+/usr/bin/c++ -fPIC -g -shared -Wl,-soname,libmapManager.so -o devel/lib/libmapManager.so CMakeFiles/mapManager.dir/src/mapManager.cpp.o 
