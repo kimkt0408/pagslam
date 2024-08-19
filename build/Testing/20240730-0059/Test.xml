@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Site BuildName="(empty)"
+	BuildStamp="20240730-0059-Experimental"
+	Name="kimkt0408"
+	Generator="ctest-3.26.4"
+	CompilerName="/usr/bin/c++"
+	CompilerVersion="9.4.0"
+	OSName="Linux"
+	Hostname="kimkt0408"
+	OSRelease="5.15.0-117-generic"
+	OSVersion="#127~20.04.1-Ubuntu SMP Thu Jul 11 15:36:12 UTC 2024"
+	OSPlatform="x86_64"
+	Is64Bits="1"
+	VendorString="GenuineIntel"
+	VendorID="Intel Corporation"
+	FamilyID="6"
+	ModelID="165"
+	ProcessorCacheSize="12288"
+	NumberOfLogicalCPU="12"
+	NumberOfPhysicalCPU="6"
+	TotalVirtualMemory="2047"
+	TotalPhysicalMemory="31711"
+	LogicalProcessorsPerPhysical="2"
+	ProcessorClockFrequency="1800"
+	>
+	<Testing>
+		<StartDateTime>Jul 30 14:07 EDT</StartDateTime>
+		<StartTestTime>1722362859</StartTestTime>
+		<TestList/>
+		<EndDateTime>Jul 30 14:07 EDT</EndDateTime>
+		<EndTestTime>1722362859</EndTestTime>
+		<ElapsedMinutes>0</ElapsedMinutes>
+	</Testing>
+</Site>

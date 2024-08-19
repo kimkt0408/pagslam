@@ -39,7 +39,7 @@
 
     <!-- ACRE2024 -->
     <!-- <arg name="bagfile_abs_path"   value="/home/kimkt0408/bagfiles/2024-06-17-10-09-49.bag" />   -->
-    <arg name="bagfile_abs_path"   value="/media/kimkt0408/T7/IoT4Ag/bagfiles/2024-07-12-16-46-00.bag" /> 
+    <arg name="bagfile_abs_path"   value="/media/kimkt0408/T7/IoT4Ag/bagfiles/2024-08-01-10-42-14.bag" /> 
 
 
     <!-- Test -->

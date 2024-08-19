@@ -13,6 +13,7 @@ namespace pagslam
         // rangeGroundMatch_ = 4; // 4
         // AddNewStalkThreshDist_ = stalkMatchThresh_;
         // maxNumIterations_ = 20;
+        // huberLossThresh_ = 1; // 0.1
 
         // (2) ACRE
         // stalkMatchThresh_ = 0.08;  // 0.12 // 0.3 
@@ -28,13 +29,21 @@ namespace pagslam
         // AddNewStalkThreshDist_ = 0.08;
         // maxNumIterations_ = 100;
 
-        // (4) new ACRE-long
+        // (4) new ACRE-long (2024)
         stalkMatchThresh_ = 0.06;  // 0.12 // 0.3 
         minStalkMatches_ = 2; //2;
         rangeGroundMatch_ = 3; // 4
         AddNewStalkThreshDist_ = 0.06;
         maxNumIterations_ = 100;
         huberLossThresh_ = 1; // 0.1
+
+        // (5) Simulation (2024)        
+        // stalkMatchThresh_ = 0.12;  // 0.12 // 0.3 
+        // minStalkMatches_ = 2; //2;
+        // rangeGroundMatch_ = 4; // 4
+        // AddNewStalkThreshDist_ = stalkMatchThresh_;
+        // maxNumIterations_ = 20;
+        // huberLossThresh_ = 1; // 0.1
     }
 
 
