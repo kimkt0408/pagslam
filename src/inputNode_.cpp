@@ -14,8 +14,6 @@
 #include <definitions.h>
 #include <pagslamNode.h>
 
-#include <chrono>
-
 enum
 {
     CLOUD_TOO_OLD,  // 0
@@ -81,6 +79,7 @@ class InputManager
         std::vector<SE3> keyPoses_;
         StampedSE3 latestOdom;
         bool firstOdom_;
+        float firstOdomOrientation_;
         bool publishTf_;
         bool success_;
         size_t odomCounter_;
@@ -92,8 +91,8 @@ InputManager::InputManager(ros::NodeHandle nh) : nh_(nh), tf_listener_{tf_buffer
 {
  
     // (1) Simulation
-    // nh_.param<float>("min_odom_distance", minOdomDistance_, 0.10); //0.10
-    // nh_.param<float>("max_time_difference", maxTimeDifference_, 0.05); //0.05
+    nh_.param<float>("min_odom_distance", minOdomDistance_, 0.1); //0.10
+    nh_.param<float>("max_time_difference", maxTimeDifference_, 0.1); //0.05
 
     // (2) ACRE-1
     // nh_.param<float>("min_odom_distance", minOdomDistance_, 0.05); //0.05
@@ -105,8 +104,8 @@ InputManager::InputManager(ros::NodeHandle nh) : nh_(nh), tf_listener_{tf_buffer
     // nh_.param<float>("min_odom_distance", minOdomDistance_, 0.01); //0.05
     // nh_.param<float>("max_time_difference", maxTimeDifference_, 0.05); //0.05
     // (2) new-ACRE-long
-    nh_.param<float>("min_odom_distance", minOdomDistance_, 0.2); //0.05
-    nh_.param<float>("max_time_difference", maxTimeDifference_, 0.05); //0.05
+    // nh_.param<float>("min_odom_distance", minOdomDistance_, 0.2); //0.1, 0.05
+    // nh_.param<float>("max_time_difference", maxTimeDifference_, 0.05); //0.05
 
     odomFreqFilter_ = nh_.param("odom_freq_filter", 1);
 
@@ -114,6 +113,8 @@ InputManager::InputManager(ros::NodeHandle nh) : nh_(nh), tf_listener_{tf_buffer
     // odomFreqFilter_ = nh_.param("odom_freq_filter", 20);
 
     publishTf_ = nh_.param("publish_tf", true);
+
+    nh_.param<float>("first_odom_orientation", firstOdomOrientation_,  0 * (M_PI / 180)); //0.1, 0.05
 
     nh_.param<std::string>("robot_frame_id", robot_frame_id_, "base_link");
     nh_.param<std::string>("odom_frame_id", odom_frame_id_, "odom");
@@ -179,10 +180,10 @@ void InputManager::OdomCb_(const nav_msgs::OdometryConstPtr &odom_msg)
 // (1) Horizontal LiDAR
 void InputManager::h_PCCb_(const sensor_msgs::PointCloud2ConstPtr &h_cloudMsg)
 {
-    // h_pcQueue_.push(h_cloudMsg);
-    // if (h_pcQueue_.size() > maxQueueSize_){
-    //     h_pcQueue_.pop();
-    // }
+    h_pcQueue_.push(h_cloudMsg);
+    if (h_pcQueue_.size() > maxQueueSize_){
+        h_pcQueue_.pop();
+    }
 }
 
 
@@ -192,10 +193,6 @@ void InputManager::v_PCCb_(const sensor_msgs::PointCloud2ConstPtr &v_cloudMsg)
     v_pcQueue_.push(v_cloudMsg);
     if (v_pcQueue_.size() > maxQueueSize_){
         v_pcQueue_.pop();
-    }
-    h_pcQueue_.push(v_cloudMsg);
-    if (h_pcQueue_.size() > maxQueueSize_){
-        h_pcQueue_.pop();
     }
 }
 
@@ -256,7 +253,18 @@ bool InputManager::callPAGSLAM(SE3 relativeMotion, StampedSE3 odom)
     if (r == CLOUD_FOUND){
         odomQueue_.pop_front();
         SE3 keyPose = SE3();
-        SE3 prevKeyPose = firstOdom_ ? SE3() : keyPoses_[keyPoses_.size() - 1];
+        // SE3 prevKeyPose = firstOdom_ ? SE3() : keyPoses_[keyPoses_.size() - 1];
+        
+        // Initialize prevKeyPose with a 90-degree yaw rotation if firstOdom_ is true
+        SE3 prevKeyPose;
+        if (firstOdom_) {
+            Eigen::Vector3d translation(0, 0, 0);
+            Eigen::Quaterniond rotation(Eigen::AngleAxisd(firstOdomOrientation_, Eigen::Vector3d::UnitZ())); // 90 degrees around Z axis
+            prevKeyPose = SE3(rotation, translation);
+        } else {
+            prevKeyPose = keyPoses_.back();
+        }
+
         pcl_conversions::toPCL(odom.stamp, h_cloud->header.stamp);
         pcl_conversions::toPCL(odom.stamp, v_cloud->header.stamp);
         
@@ -288,20 +296,20 @@ int InputManager::FindPC(const ros::Time stamp, CloudT::Ptr h_cloud, CloudT::Ptr
         
     while (!h_pcQueue_.empty() && !v_pcQueue_.empty()){
         if (h_pcQueue_.front()->header.stamp.toSec() < stamp.toSec() - maxTimeDifference_){
-            ROS_DEBUG_STREAM("H_PCLOUD MSG TOO OLD");
+            // ROS_DEBUG_STREAM("H_PCLOUD MSG TOO OLD");
             h_pcQueue_.pop();
         }
         else if (h_pcQueue_.front()->header.stamp.toSec() > stamp.toSec() + maxTimeDifference_){
-            ROS_DEBUG_STREAM("H_PCLOUD MSG TOO NEW");
+            // ROS_DEBUG_STREAM("H_PCLOUD MSG TOO NEW");
             return CLOUD_TOO_NEW;
         }
         else{
             if (v_pcQueue_.front()->header.stamp.toSec() < stamp.toSec() - maxTimeDifference_){
-                ROS_DEBUG_STREAM("V_PCLOUD MSG TOO OLD");
+                // ROS_DEBUG_STREAM("V_PCLOUD MSG TOO OLD");
                 v_pcQueue_.pop();
             }
             else if (v_pcQueue_.front()->header.stamp.toSec() > stamp.toSec() + maxTimeDifference_){
-                ROS_DEBUG_STREAM("V_PCLOUD MSG TOO NEW");
+                // ROS_DEBUG_STREAM("V_PCLOUD MSG TOO NEW");
                 return CLOUD_TOO_NEW;
             }
             else{
@@ -444,30 +452,15 @@ int main(int argc, char **argv)
 
     InputManager in(n);
 
-    double total_latency = 0.0;
-    int count = 0;
-
-    ros::Rate r(20); // 20 hz
+    ros::Rate r(20); // 10 hz
     while (ros::ok()){
         for (auto i = 0; i < 10; ++i){
             ros::spinOnce();    // spinOnce(): it allows ROS to process any incoming messages and call any callbacks that are associated with the node's subscribers.   
-            // if (i % 5 == 0){    
-                auto input_time = std::chrono::high_resolution_clock::now();
+            if (i % 5 == 0){
                 in.Run();
-                auto output_time = std::chrono::high_resolution_clock::now();
-                std::chrono::duration<double, std::milli> latency = output_time - input_time;
-                std::cout << "1 System latency: " << latency.count() << " ms\n";
-
-                total_latency += latency.count();
-                count++;
-                  
-            // }    
-            r.sleep();          
+            }
+            r.sleep();
         }
     }
-
-    double avg_latency = total_latency / count;
-    std::cout << "1 Average system latency: " << avg_latency << " " << count << " ms\n";
-
     return 0;
 }
