@@ -75,6 +75,7 @@ class InputManager
         size_t maxQueueSize_;
 
         float maxTimeDifference_;
+        float firstOdomOrientation_;
 
         // vars
         boost::shared_ptr<pagslam::PAGSLAMNode> pagslam_ = nullptr;
@@ -114,6 +115,8 @@ InputManager::InputManager(ros::NodeHandle nh) : nh_(nh), tf_listener_{tf_buffer
     // odomFreqFilter_ = nh_.param("odom_freq_filter", 20);
 
     publishTf_ = nh_.param("publish_tf", true);
+
+    nh_.param<float>("first_odom_orientation", firstOdomOrientation_,  0 * (M_PI / 180)); //0.1, 0.05
 
     nh_.param<std::string>("robot_frame_id", robot_frame_id_, "base_link");
     nh_.param<std::string>("odom_frame_id", odom_frame_id_, "odom");
@@ -256,7 +259,17 @@ bool InputManager::callPAGSLAM(SE3 relativeMotion, StampedSE3 odom)
     if (r == CLOUD_FOUND){
         odomQueue_.pop_front();
         SE3 keyPose = SE3();
-        SE3 prevKeyPose = firstOdom_ ? SE3() : keyPoses_[keyPoses_.size() - 1];
+        // SE3 prevKeyPose = firstOdom_ ? SE3() : keyPoses_[keyPoses_.size() - 1];
+        
+        SE3 prevKeyPose;
+        if (firstOdom_) {
+            Eigen::Vector3d translation(0, 0, 0);
+            Eigen::Quaterniond rotation(Eigen::AngleAxisd(firstOdomOrientation_, Eigen::Vector3d::UnitZ())); // 90 degrees around Z axis
+            prevKeyPose = SE3(rotation, translation);
+        } else {
+            prevKeyPose = keyPoses_.back();
+        }
+
         pcl_conversions::toPCL(odom.stamp, h_cloud->header.stamp);
         pcl_conversions::toPCL(odom.stamp, v_cloud->header.stamp);
         
