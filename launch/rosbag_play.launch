@@ -33,7 +33,7 @@
     <!-- RA-L -->
     <!-- <arg name="bagfile_abs_path"   value="/home/kimkt0408/bagfiles/2023-09-21-12-57-44.bag" /> -->
     <!-- (multiple/mid)-->
-    <arg name="bagfile_abs_path"   value="/home/kimkt0408/bagfiles/2023-09-21-12-33-19.bag" />
+    <!-- <arg name="bagfile_abs_path"   value="/home/kimkt0408/bagfiles/2023-09-21-12-33-19.bag" /> -->
     <!-- (multiple/short)-->
     <!-- <arg name="bagfile_abs_path"   value="/home/kimkt0408/bagfiles/2023-09-21-11-16-29.bag" />   -->
 
@@ -41,8 +41,7 @@
     <!-- <arg name="bagfile_abs_path"   value="/home/kimkt0408/Downloads/test2.bag" />   -->
 
     <!-- ACRE -->
-
-    <!-- <arg name="bagfile_abs_path"   value="/home/kimkt0408/bagfiles/2023-07-29-12-22-29.bag" />  -->
+    <!-- <arg name="bagfile_abs_path"   value="/home/kimkt0408/bagfiles/2024-07-08-09-38-42.bag" />  -->
     <!-- <arg name="bagfile_abs_path"   value="/home/kimkt0408/bagfiles/2023-09-21-12-57-44.bag" /> -->
     <!-- <arg name="bagfile_abs_path"   value="/home/kimkt0408/bagfiles/2023-09-21-13-28-03.bag" /> -->
     <!-- <arg name="bagfile_abs_path"   value="/home/kimkt0408/bagfiles/2023-09-14-13-00-45.bag" /> -->
@@ -52,10 +51,11 @@
 
     <!-- <arg name="bagfile_abs_path"   value="/home/kimkt0408/2022-11-29-11-31-15.bag" />        -->
 
-
     <!-- <arg name="bagfile_abs_path"   value="/media/kimkt0408/T7/IoT4Ag/bagfiles/2023/2023-07-29-12-22-29.bag" /> -->
     <!-- <arg name="bagfile_abs_path"   value="/media/kimkt0408/T7/IoT4Ag/bagfiles/2023/loopCornfield_imu2_sim.bag" /> -->
-
+    
+    <arg name="bagfile_abs_path"   value="/media/kimkt0408/T7\ Shield/IoT4Ag/bagfiles/2024-08-19-19-34-05.bag" />
+    
     <!-- rosbag play -->
     <!-- <param name="/use_sim_time" value="true" /> -->
     <node pkg="rosbag" type="play" name="rosplay"

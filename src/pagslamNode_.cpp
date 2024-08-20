@@ -180,7 +180,7 @@ namespace pagslam
 
     
     // (2) For a single LiDAR (vertical LiDAR)
-    bool PAGSLAMNode::groundExtraction(CloudT::Ptr& h_cloud, PagslamInput& pagslamIn)
+    bool PAGSLAMNode::groundExtraction(CloudT::Ptr& v_cloud, PagslamInput& pagslamIn)
     {
         CloudT::Ptr groundCloud(new CloudT());
         CloudT::Ptr groundCloud_outlier(new CloudT());
@@ -189,7 +189,7 @@ namespace pagslam
         // ******** (1) Ground plane *********        
         // Filter the point cloud to use points with negative z-values
         pcl::PassThrough<PointT> pass;
-        pass.setInputCloud(h_cloud);
+        pass.setInputCloud(v_cloud);
         pass.setFilterFieldName("y");
         // (1) SIM
         // pass.setFilterLimits(-1.0, -0.2);  // Set the filter limits for negative z-values
@@ -198,9 +198,9 @@ namespace pagslam
         // (2) ACRE
         pass.setFilterLimits(0.3, 0.5);  // Set the filter limits for positive y-values
         // pass.setFilterLimitsNegative(false);  // Keep points inside the limits
-        pass.filter(*h_cloud);
+        pass.filter(*v_cloud);
 
-        extractor_->ransac(h_cloud, groundCloud, groundCloud_outlier, groundCoefficients);
+        extractor_->ransac(v_cloud, groundCloud, groundCloud_outlier, groundCoefficients);
         
         // Transform the point cloud and model coefficients to robot_frame
         bool_groundTransformFrame_ = transformFrame(v_lidar_frame_id_, robot_frame_id_, tf_groundSourceToTarget_);
