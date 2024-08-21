@@ -106,7 +106,10 @@ InputManager::InputManager(ros::NodeHandle nh) : nh_(nh), tf_listener_{tf_buffer
     // nh_.param<float>("min_odom_distance", minOdomDistance_, 0.01); //0.05
     // nh_.param<float>("max_time_difference", maxTimeDifference_, 0.05); //0.05
     // (2) new-ACRE-long
-    nh_.param<float>("min_odom_distance", minOdomDistance_, 0.1); //0.05
+    // nh_.param<float>("min_odom_distance", minOdomDistance_, 0.1); //0.05
+    // nh_.param<float>("max_time_difference", maxTimeDifference_, 0.05); //0.05
+    // Test: 2024-08
+    nh_.param<float>("min_odom_distance", minOdomDistance_, 0.001); //0.05
     nh_.param<float>("max_time_difference", maxTimeDifference_, 0.05); //0.05
 
     odomFreqFilter_ = nh_.param("odom_freq_filter", 1);
@@ -116,7 +119,7 @@ InputManager::InputManager(ros::NodeHandle nh) : nh_(nh), tf_listener_{tf_buffer
 
     publishTf_ = nh_.param("publish_tf", true);
 
-    nh_.param<float>("first_odom_orientation", firstOdomOrientation_,  0 * (M_PI / 180)); //0.1, 0.05
+    nh_.param<float>("first_odom_orientation", firstOdomOrientation_, 0 * (M_PI / 180)); //0.1, 0.05
 
     nh_.param<std::string>("robot_frame_id", robot_frame_id_, "base_link");
     nh_.param<std::string>("odom_frame_id", odom_frame_id_, "odom");
@@ -151,7 +154,9 @@ InputManager::InputManager(ros::NodeHandle nh) : nh_(nh), tf_listener_{tf_buffer
 
 // Odometry Callback function
 void InputManager::OdomCb_(const nav_msgs::OdometryConstPtr &odom_msg)
-{
+{   
+    // ROS_DEBUG_STREAM("OdomCb_ running in thread: " << std::this_thread::get_id());
+
     // Count the number of subscribed odometry data
     odomCounter_++;
     if (odomCounter_ % odomFreqFilter_ != 0){
@@ -181,7 +186,9 @@ void InputManager::OdomCb_(const nav_msgs::OdometryConstPtr &odom_msg)
 // Pointcloud Callback function
 // (1) Horizontal LiDAR
 void InputManager::h_PCCb_(const sensor_msgs::PointCloud2ConstPtr &h_cloudMsg)
-{
+{   
+    // ROS_DEBUG_STREAM("h_PCCb_ running in thread: " << std::this_thread::get_id());
+
     // h_pcQueue_.push(h_cloudMsg);
     // if (h_pcQueue_.size() > maxQueueSize_){
     //     h_pcQueue_.pop();
@@ -191,14 +198,17 @@ void InputManager::h_PCCb_(const sensor_msgs::PointCloud2ConstPtr &h_cloudMsg)
 
 // (2) Vertical LiDAR
 void InputManager::v_PCCb_(const sensor_msgs::PointCloud2ConstPtr &v_cloudMsg)
-{
-    v_pcQueue_.push(v_cloudMsg);
-    if (v_pcQueue_.size() > maxQueueSize_){
-        v_pcQueue_.pop();
-    }
+{   
+    // ROS_DEBUG_STREAM("v_PCCb_ running in thread: " << std::this_thread::get_id());
+
     h_pcQueue_.push(v_cloudMsg);
     if (h_pcQueue_.size() > maxQueueSize_){
         h_pcQueue_.pop();
+    }
+
+    v_pcQueue_.push(v_cloudMsg);
+    if (v_pcQueue_.size() > maxQueueSize_){
+        v_pcQueue_.pop();
     }
 }
 
@@ -460,27 +470,61 @@ int main(int argc, char **argv)
     double total_latency = 0.0;
     int count = 0;
 
-    ros::Rate r(20); // 20 hz
+    ros::Rate r(60); // 20 hz
     while (ros::ok()){
         for (auto i = 0; i < 10; ++i){
             ros::spinOnce();    // spinOnce(): it allows ROS to process any incoming messages and call any callbacks that are associated with the node's subscribers.   
             // if (i % 5 == 0){    
-                auto input_time = std::chrono::high_resolution_clock::now();
+                // auto input_time = std::chrono::high_resolution_clock::now();
                 in.Run();
-                auto output_time = std::chrono::high_resolution_clock::now();
-                std::chrono::duration<double, std::milli> latency = output_time - input_time;
-                std::cout << "1 System latency: " << latency.count() << " ms\n";
+                // auto output_time = std::chrono::high_resolution_clock::now();
+                // std::chrono::duration<double, std::milli> latency = output_time - input_time;
+                // std::cout << "1 System latency: " << latency.count() << " ms\n";
 
-                total_latency += latency.count();
-                count++;
+                // total_latency += latency.count();
+                // count++;
                   
             // }    
             r.sleep();          
         }
     }
 
-    double avg_latency = total_latency / count;
-    std::cout << "1 Average system latency: " << avg_latency << " " << count << " ms\n";
+    // double avg_latency = total_latency / count;
+    // std::cout << "1 Average system latency: " << avg_latency << " " << count << " ms\n";
 
     return 0;
 }
+
+// int main(int argc, char **argv)
+// {
+//     ros::init(argc, argv, "pagslam");
+
+//     ros::NodeHandle n("pagslam");
+
+//     InputManager in(n);
+
+//     // double total_latency = 0.0;
+//     // int count = 0;
+
+//     // Create an AsyncSpinner with 4 threads
+//     ros::AsyncSpinner spinner(4);  // Adjust the number of threads based on your system
+//     spinner.start();  // Start the spinner, allowing it to handle callbacks concurrently
+
+//     ros::Rate r(20); // 20 Hz
+//     while (ros::ok()){
+//         in.Run();  // Perform your custom processing
+
+//         r.sleep();  // Maintain the loop rate
+//         // for (auto i = 0; i < 10; ++i){
+//         //     // No need to call spinOnce(), the AsyncSpinner will handle callbacks in parallel
+//         //     in.Run();  // Perform your custom processing
+
+//         //     r.sleep();  // Maintain the loop rate
+//         // }
+//     }
+
+//     // Stop the spinner before exiting
+//     spinner.stop();
+
+//     return 0;
+// }

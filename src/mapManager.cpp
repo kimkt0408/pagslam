@@ -80,7 +80,7 @@ void MapManager::updateMap(std::vector<StalkFeature::Ptr>& stalks, const std::ve
 
     size_t i = 0;
 
-    cout << "MAP SIZE: " << stalks.size() << endl;
+    // cout << "MAP SIZE: " << stalks.size() << endl;
     for(auto const& stalk : stalks){
 
         PointT pt;

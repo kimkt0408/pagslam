@@ -106,7 +106,6 @@ namespace pagslam
             std::string robot_frame_id_;
             std::string h_lidar_frame_id_;
             std::string v_lidar_frame_id_;
-
             // Params
             // Plane
             int ransacMaxIterations_;

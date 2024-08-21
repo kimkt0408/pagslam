@@ -43,11 +43,22 @@ namespace ext
     //   minInliers_(30)      // ACRE
 
 
+    //   seedSearchRadius_(0.12),
+    //   maxSeedZLimit_(0.5),
+    //   minSeedPts_(4),
+    //   nIterations_(100),
+    //   minInliers_(30),      // new-ACRE-long
+    //   toleranceR_(0.10),
+    //   min_z_addition_(0.10),
+    //   max_z_addition_(0.16),
+    //   offsetSearchRadius_(0.04)
+
+      // TEST: 2024-08
       seedSearchRadius_(0.12),
       maxSeedZLimit_(0.5),
       minSeedPts_(4),
-      nIterations_(100),
-      minInliers_(30),      // new-ACRE-long
+      nIterations_(10),
+      minInliers_(30),      
       toleranceR_(0.10),
       min_z_addition_(0.10),
       max_z_addition_(0.16),
@@ -73,8 +84,28 @@ namespace ext
     //   minInliers_(30)      // ACRE
     // {}
     
+    // void Extraction::downsamplePointCloud(CloudT::Ptr cloud, float leafSize)
+    // {
+    //     pcl::VoxelGrid<PointT> sor;
+    //     sor.setInputCloud(cloud);
+    //     sor.setLeafSize(leafSize, leafSize, leafSize); // Set the voxel size (leaf size)
+    //     CloudT::Ptr cloud_filtered(new CloudT);
+    //     sor.filter(*cloud_filtered);
+    //     cloud = cloud_filtered; // Update the input cloud with the downsampled cloud
+    // }
+
+
+    // Added downsampling function to reduce the computational latency of the system
     void Extraction::ransac(const CloudT::Ptr inCloud, CloudT::Ptr& outCloud_inlier, CloudT::Ptr& outCloud_outlier, pcl::ModelCoefficients::Ptr& groundCoefficients)
     {
+        // Downsample the input cloud to reduce the number of points
+        pcl::VoxelGrid<PointT> sor;
+        float leafSize = 0.2f; // Adjust this value based on the desired resolution
+        sor.setInputCloud(inCloud);
+        sor.setLeafSize(leafSize, leafSize, leafSize); // Set the voxel size (leaf size)
+        CloudT::Ptr downsampledCloud(new CloudT);
+        sor.filter(*downsampledCloud);
+        
         pcl::PointIndices inliers;
         pcl::ModelCoefficients groundCoeffs;
         // Create the segmentation object
@@ -85,7 +116,7 @@ namespace ext
         seg.setModelType (pcl::SACMODEL_PLANE);
         seg.setMethodType (pcl::SAC_RANSAC);
         seg.setMaxIterations (ransacMaxIterations_);
-        seg.setInputCloud (inCloud);
+        seg.setInputCloud (downsampledCloud);
 
         // Set the distance threshold only once
         if (seg.getDistanceThreshold() != 0.06) {
@@ -103,7 +134,7 @@ namespace ext
             if (inliers.indices.size () > minInliers_) {
                 // Extract the planar inliers from the input cloud
                 pcl::ExtractIndices<PointT> extract;
-                extract.setInputCloud(inCloud);
+                extract.setInputCloud(downsampledCloud);
                 extract.setIndices(boost::make_shared<pcl::PointIndices>(inliers));
                 extract.setNegative(false);
                 extract.filter(*outCloud_inlier);
@@ -125,10 +156,72 @@ namespace ext
 
         // No valid segmentation found
         outCloud_inlier->clear();
-        outCloud_outlier = inCloud;
+        outCloud_outlier = downsampledCloud;
         groundCoefficients.reset(new pcl::ModelCoefficients);
         ROS_WARN("No valid segmentation found in %d iterations", nIterations_);
     }
+   
+
+    // void Extraction::ransac(const CloudT::Ptr inCloud, CloudT::Ptr& outCloud_inlier, CloudT::Ptr& outCloud_outlier, pcl::ModelCoefficients::Ptr& groundCoefficients)
+    // {
+    //     // Downsample the input cloud to reduce the number of points
+    //     float leafSize = 1.0f; // Adjust this value based on the desired resolution
+    //     downsamplePointCloud(inCloud, leafSize);
+        
+    //     pcl::PointIndices inliers;
+    //     pcl::ModelCoefficients groundCoeffs;
+    //     // Create the segmentation object
+    //     pcl::SACSegmentation<PointT> seg;
+    //     // Optional
+    //     seg.setOptimizeCoefficients (true);
+    //     // Mandatory
+    //     seg.setModelType (pcl::SACMODEL_PLANE);
+    //     seg.setMethodType (pcl::SAC_RANSAC);
+    //     seg.setMaxIterations (ransacMaxIterations_);
+    //     seg.setInputCloud (inCloud);
+
+    //     // Set the distance threshold only once
+    //     if (seg.getDistanceThreshold() != 0.06) {
+    //         seg.setDistanceThreshold (0.06);
+    //     }
+
+    //     #pragma omp parallel for
+    //     for (int i = 0; i < nIterations_; ++i)
+    //     {
+    //         // Perform segmentation
+    //         seg.segment (inliers, groundCoeffs);
+
+    //         // cout << "!!!!!!!!!" << inliers.indices.size() << endl;
+    //         // If enough inliers were found
+    //         if (inliers.indices.size () > minInliers_) {
+    //             // Extract the planar inliers from the input cloud
+    //             pcl::ExtractIndices<PointT> extract;
+    //             extract.setInputCloud(inCloud);
+    //             extract.setIndices(boost::make_shared<pcl::PointIndices>(inliers));
+    //             extract.setNegative(false);
+    //             extract.filter(*outCloud_inlier);
+
+    //             extract.setNegative(true);
+    //             extract.filter(*outCloud_outlier);
+
+    //             // Update the ground coefficients
+    //             groundCoefficients = boost::make_shared<pcl::ModelCoefficients>(groundCoeffs);
+
+    //             // cout << "Model coefficients: " << groundCoefficients->values[0] << " " 
+    //             //                     << groundCoefficients->values[1] << " "
+    //             //                     << groundCoefficients->values[2] << " " 
+    //             //                     << groundCoefficients->values[3] << endl;
+
+    //             return;
+    //         }
+    //     }
+
+    //     // No valid segmentation found
+    //     outCloud_inlier->clear();
+    //     outCloud_outlier = inCloud;
+    //     groundCoefficients.reset(new pcl::ModelCoefficients);
+    //     ROS_WARN("No valid segmentation found in %d iterations", nIterations_);
+    // }
    
 
     void Extraction::transformGroundPlane(const tf2::Transform tf, const CloudT::Ptr& groundCloud, pcl::ModelCoefficients::Ptr& groundCoefficients, PagslamInput &pagslamIn)

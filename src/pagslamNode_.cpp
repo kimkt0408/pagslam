@@ -51,7 +51,9 @@ namespace pagslam
         pubHCloud_ = nh_.advertise<CloudT>("debug/h_cloud_", 1);
         pubVCloud_ = nh_.advertise<CloudT>("debug/v_cloud_", 1);
 
-        pubGroundMarker_ = nh_.advertise<visualization_msgs::MarkerArray>("debug/ground_marker_", 1);
+        // pubGroundMarker_ = nh_.advertise<visualization_msgs::MarkerArray>("debug/ground_marker_", 1);
+        pubGroundMarker_ = nh_.advertise<visualization_msgs::Marker>("debug/ground_marker_", 1);
+        
         pubStalkCloudClustersMarker_ = nh_.advertise<visualization_msgs::MarkerArray>("debug/stalk_cloud_clusters_marker_", 1);
         pubStalkSeedClustersMarker_ = nh_.advertise<visualization_msgs::MarkerArray>("debug/stalk_seed_clusters_marker_", 1);
         pubStalkLinesMarker_ = nh_.advertise<visualization_msgs::Marker>("debug/stalk_lines_marker_", 1);
@@ -105,8 +107,13 @@ namespace pagslam
         // minDbscanPts_ = nh_.param("dbscan_min_num_points", 100); // 80
 
 
-        // (2) // new-ACRE-long
-        ransacMaxIterations_ = nh_.param("ransac_max_iterations", 100);
+        // // (2) // new-ACRE-long
+        // ransacMaxIterations_ = nh_.param("ransac_max_iterations", 100);
+        // eps_= nh_.param("dbscan_epsilon", 0.05); // 0.006
+        // minDbscanPts_ = nh_.param("dbscan_min_num_points", 2); // 80
+
+        // TEST: 2024-08
+        ransacMaxIterations_ = nh_.param("ransac_max_iterations", 10);
         eps_= nh_.param("dbscan_epsilon", 0.05); // 0.006
         minDbscanPts_ = nh_.param("dbscan_min_num_points", 2); // 80
 
@@ -180,7 +187,7 @@ namespace pagslam
 
     
     // (2) For a single LiDAR (vertical LiDAR)
-    bool PAGSLAMNode::groundExtraction(CloudT::Ptr& v_cloud, PagslamInput& pagslamIn)
+    bool PAGSLAMNode::groundExtraction(CloudT::Ptr& h_cloud, PagslamInput& pagslamIn)
     {
         CloudT::Ptr groundCloud(new CloudT());
         CloudT::Ptr groundCloud_outlier(new CloudT());
@@ -189,18 +196,22 @@ namespace pagslam
         // ******** (1) Ground plane *********        
         // Filter the point cloud to use points with negative z-values
         pcl::PassThrough<PointT> pass;
-        pass.setInputCloud(v_cloud);
+        pass.setInputCloud(h_cloud);
         pass.setFilterFieldName("y");
+        // pass.setFilterFieldName("z");
         // (1) SIM
         // pass.setFilterLimits(-1.0, -0.2);  // Set the filter limits for negative z-values
         // pass.setFilterLimits(-1.0, -0.5);  // Set the filter limits for negative z-values
         
         // (2) ACRE
-        pass.setFilterLimits(0.3, 0.5);  // Set the filter limits for positive y-values
+        // pass.setFilterLimits(0.3, 0.5);  // Set the filter limits for positive y-values
+        pass.setFilterLimits(0.3, 0.8);  // Set the filter limits for positive y-values
+        // pass.setFilterLimits(-1.0, -0.5);  // Set the filter limits for negative z-values
+        
         // pass.setFilterLimitsNegative(false);  // Keep points inside the limits
-        pass.filter(*v_cloud);
+        pass.filter(*h_cloud);
 
-        extractor_->ransac(v_cloud, groundCloud, groundCloud_outlier, groundCoefficients);
+        extractor_->ransac(h_cloud, groundCloud, groundCloud_outlier, groundCoefficients);
         
         // Transform the point cloud and model coefficients to robot_frame
         bool_groundTransformFrame_ = transformFrame(v_lidar_frame_id_, robot_frame_id_, tf_groundSourceToTarget_);
@@ -218,10 +229,14 @@ namespace pagslam
             << pagslamIn.groundFeature.coefficients->values[2] << " "
             << pagslamIn.groundFeature.coefficients->values[3]);
 
-            if (pagslamIn.groundFeature.coefficients->values[3] < 0 ||
-            abs(pagslamIn.groundFeature.coefficients->values[3]/pagslamIn.groundFeature.coefficients->values[2]) > 1){    // If the extracted ground plane is not accurate
+            // if (pagslamIn.groundFeature.coefficients->values[3] < 0 ||
+            // abs(pagslamIn.groundFeature.coefficients->values[3]/pagslamIn.groundFeature.coefficients->values[2]) > 1){    // If the extracted ground plane is not accurate
+            //     return false;
+            // }      
+
+            if (abs(pagslamIn.groundFeature.coefficients->values[3]/pagslamIn.groundFeature.coefficients->values[2]) > 1){    // If the extracted ground plane is not accurate
                 return false;
-            }            
+            }         
         }
 
         if (debugMode_){   
@@ -229,8 +244,51 @@ namespace pagslam
             groundPlaneVisualization(pagslamIn.groundFeature.coefficients);
         }
         // if (debugMode_){   
-        //     pubHCloud_.publish(v_cloud);
+        //     pubHCloud_.publish(h_cloud);
         // }
+
+        // // Add visualization marker
+        // visualization_msgs::Marker plane_marker;
+        // plane_marker.header.frame_id = robot_frame_id_;  // Replace with your frame
+        // plane_marker.header.stamp = ros::Time::now();
+        // plane_marker.ns = "ground_plane";
+        // plane_marker.id = 0;
+        // plane_marker.type = visualization_msgs::Marker::CUBE;
+        // plane_marker.action = visualization_msgs::Marker::ADD;
+
+        // // Calculate the normal and centroid of the plane
+        // Eigen::Vector3f normal(pagslamIn.groundFeature.coefficients->values[0],
+        //                        pagslamIn.groundFeature.coefficients->values[1],
+        //                        pagslamIn.groundFeature.coefficients->values[2]);
+
+        // float d = pagslamIn.groundFeature.coefficients->values[3];
+        // Eigen::Vector3f centroid(0, 0, -d / normal.norm());
+
+        // plane_marker.pose.position.x = centroid.x();
+        // plane_marker.pose.position.y = centroid.y();
+        // plane_marker.pose.position.z = centroid.z();
+
+        // // Calculate the orientation from the normal vector
+        // Eigen::Quaternionf q;
+        // q.setFromTwoVectors(Eigen::Vector3f(0, 0, 1), normal.normalized());
+        // plane_marker.pose.orientation.x = q.x();
+        // plane_marker.pose.orientation.y = q.y();
+        // plane_marker.pose.orientation.z = q.z();
+        // plane_marker.pose.orientation.w = q.w();
+
+        // // Set the size of the plane
+        // plane_marker.scale.x = 10.0;
+        // plane_marker.scale.y = 10.0;
+        // plane_marker.scale.z = 0.01;  // Thickness of the plane
+
+        // // Set the color and transparency
+        // plane_marker.color.a = 0.5;  // Transparency
+        // plane_marker.color.r = 0.0;
+        // plane_marker.color.g = 1.0;
+        // plane_marker.color.b = 0.0;
+
+        // // Publish the marker
+        // pubGroundMarker_.publish(plane_marker);
 
         return true;
     }
@@ -488,37 +546,80 @@ namespace pagslam
 
     void PAGSLAMNode::groundPlaneVisualization(const pcl::ModelCoefficients::Ptr groundCoefficients)
     {
-        int num_markers = 360;
-        visualization_msgs::MarkerArray markers;
-        markers.markers.resize(num_markers);
+        // int num_markers = 360;
+        // visualization_msgs::MarkerArray markers;
+        // markers.markers.resize(num_markers);
 
-        // Loop over all markers
-        for (int i = 0; i < num_markers; i++) {
-            markers.markers[i].header.frame_id = groundCoefficients->header.frame_id;
+        // // Loop over all markers
+        // for (int i = 0; i < num_markers; i++) {
+        //     markers.markers[i].header.frame_id = groundCoefficients->header.frame_id;
 
-            ros::Time stamp = pcl_conversions::fromPCL(groundCoefficients->header).stamp;
-            markers.markers[i].header.stamp = stamp;    
-            markers.markers[i].ns = "plane_markers";
-            markers.markers[i].id = i;
-            markers.markers[i].type = visualization_msgs::Marker::SPHERE_LIST;
-            markers.markers[i].action = visualization_msgs::Marker::ADD;
+        //     ros::Time stamp = pcl_conversions::fromPCL(groundCoefficients->header).stamp;
+        //     markers.markers[i].header.stamp = stamp;    
+        //     markers.markers[i].ns = "plane_markers";
+        //     markers.markers[i].id = i;
+        //     markers.markers[i].type = visualization_msgs::Marker::SPHERE_LIST;
+        //     markers.markers[i].action = visualization_msgs::Marker::ADD;
             
-            float radian = float(i) * M_PI / 180.0;
-            markers.markers[i].pose.position.x = 2*cos(radian);
-            markers.markers[i].pose.position.y = 2*sin(radian);
-            markers.markers[i].pose.position.z = (-groundCoefficients->values[3] - groundCoefficients->values[0] * markers.markers[i].pose.position.x - groundCoefficients->values[1] * markers.markers[i].pose.position.y) / groundCoefficients->values[2];
+        //     float radian = float(i) * M_PI / 180.0;
+        //     markers.markers[i].pose.position.x = 2*cos(radian);
+        //     markers.markers[i].pose.position.y = 2*sin(radian);
+        //     markers.markers[i].pose.position.z = (-groundCoefficients->values[3] - groundCoefficients->values[0] * markers.markers[i].pose.position.x - groundCoefficients->values[1] * markers.markers[i].pose.position.y) / groundCoefficients->values[2];
             
-            markers.markers[i].pose.orientation.w = 1.0;
-            markers.markers[i].scale.x = 0.05;
-            markers.markers[i].scale.y = 0.05;
-            markers.markers[i].scale.z = 0.05;
-            markers.markers[i].color.a = 1.0;
-            markers.markers[i].color.r = 0.0;
-            markers.markers[i].color.g = 1.0;
-            markers.markers[i].color.b = 0.0;
-        }
+        //     markers.markers[i].pose.orientation.w = 1.0;
+        //     markers.markers[i].scale.x = 0.05;
+        //     markers.markers[i].scale.y = 0.05;
+        //     markers.markers[i].scale.z = 0.05;
+        //     markers.markers[i].color.a = 1.0;
+        //     markers.markers[i].color.r = 0.0;
+        //     markers.markers[i].color.g = 1.0;
+        //     markers.markers[i].color.b = 0.0;
+        // }
 
-        pubGroundMarker_.publish(markers);
+        // pubGroundMarker_.publish(markers);
+
+        // Add visualization marker
+        visualization_msgs::Marker plane_marker;
+        plane_marker.header.frame_id = robot_frame_id_;  // Replace with your frame
+        plane_marker.header.stamp = ros::Time::now();
+        plane_marker.ns = "ground_plane";
+        plane_marker.id = 0;
+        plane_marker.type = visualization_msgs::Marker::CUBE;
+        plane_marker.action = visualization_msgs::Marker::ADD;
+
+        // Calculate the normal and centroid of the plane
+        Eigen::Vector3f normal(groundCoefficients->values[0],
+                               groundCoefficients->values[1],
+                               groundCoefficients->values[2]);
+
+        float d = groundCoefficients->values[3];
+        Eigen::Vector3f centroid(0, 0, -d / normal.norm());
+
+        plane_marker.pose.position.x = centroid.x();
+        plane_marker.pose.position.y = centroid.y();
+        plane_marker.pose.position.z = centroid.z();
+
+        // Calculate the orientation from the normal vector
+        Eigen::Quaternionf q;
+        q.setFromTwoVectors(Eigen::Vector3f(0, 0, 1), normal.normalized());
+        plane_marker.pose.orientation.x = q.x();
+        plane_marker.pose.orientation.y = q.y();
+        plane_marker.pose.orientation.z = q.z();
+        plane_marker.pose.orientation.w = q.w();
+
+        // Set the size of the plane
+        plane_marker.scale.x = 2.0;
+        plane_marker.scale.y = 2.0;
+        plane_marker.scale.z = 0.01;  // Thickness of the plane
+
+        // Set the color and transparency
+        plane_marker.color.a = 0.5;  // Transparency
+        plane_marker.color.r = 0.0;
+        plane_marker.color.g = 1.0;
+        plane_marker.color.b = 0.0;
+
+        // Publish the marker
+        pubGroundMarker_.publish(plane_marker);
     }
 
 

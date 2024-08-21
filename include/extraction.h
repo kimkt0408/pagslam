@@ -79,6 +79,8 @@ namespace ext
             void transformStalkCloud(tf2::Transform tf, std::vector<CloudT::Ptr>& inCloudClusters, std::vector<CloudT::Ptr>& tfm_inCloudClusters);
                         
             void dbscan(pcl::PointCloud<pcl::PointXYZ>::Ptr inCloud, double eps, int minPts, std::vector<pcl::PointIndices>& cluster_indices);
+
+            // void downsamplePointCloud(CloudT::Ptr cloud, float leafSize);
     
         private:
             int ransacMaxIterations_;       // Max iteration for ground feature extraction
