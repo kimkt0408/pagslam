@@ -67,6 +67,9 @@
         "bit": "cpp",
         "shared_mutex": "cpp",
         "hash_map": "cpp",
-        "hash_set": "cpp"
+        "hash_set": "cpp",
+        "forward_list": "cpp",
+        "core": "cpp",
+        "numericaldiff": "cpp"
     }
 }

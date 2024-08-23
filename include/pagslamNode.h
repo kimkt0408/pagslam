@@ -34,15 +34,18 @@ namespace pagslam
             using Ptr = boost::shared_ptr<PAGSLAMNode>;
             using ConstPtr = boost::shared_ptr<const PAGSLAMNode>;
 
-            bool groundExtraction(CloudT::Ptr& h_cloud, PagslamInput& pagslamIn);
+            // bool groundExtraction(CloudT::Ptr& h_cloud, PagslamInput& pagslamIn);
             // bool groundExtraction(CloudT::Ptr& v_cloud, PagslamInput& pagslamIn);
+            bool groundExtraction(CloudT::Ptr& h_cloud, PagslamInput& pagslamIn, const SE3 initialGuess);
+            
             bool stalkExtraction(CloudT::Ptr& v_cloud, PagslamInput& pagslamIn);
             
             // bool run(const SE3 initialGuess, const SE3 prevKeyPose, CloudT::Ptr h_cloud, CloudT::Ptr v_cloud, ros::Time stamp, SE3 &outPose);
             // bool run(const SE3 initialGuess, const SE3 prevKeyPose, CloudT::Ptr CloudT::Ptr v_cloud, StampedSE3 odom, SE3 &outPose);
             bool run(const SE3 initialGuess, const SE3 prevKeyPose, CloudT::Ptr h_cloud, CloudT::Ptr v_cloud, StampedSE3 odom, SE3 &outPose);
             bool transformFrame(const std::string source_frame, const std::string target_frame, tf2::Transform& tf_sourceToTarget_);
-            void groundPlaneVisualization(const pcl::ModelCoefficients::Ptr groundCoefficients);
+            // void groundPlaneVisualization(const pcl::ModelCoefficients::Ptr groundCoefficients);
+            visualization_msgs::Marker groundPlaneVisualization(const GroundFeature groundFeature, int groundType);
             visualization_msgs::MarkerArray stalkCloudClustersVisualization(const std::vector<CloudT::Ptr> outCloudClusters);
             void stalkLinesVisualization(const std::vector<StalkFeature::Ptr>& stalkFeatures);
             // void trajectoryVisualization(const std::vector<SE3> &poses);
@@ -63,7 +66,9 @@ namespace pagslam
             ros::Publisher pubVCloud_;
             
             ros::Publisher pubStalkCloud_;
-            ros::Publisher pubGroundMarker_;
+            ros::Publisher pubGroundMarkerIn_;
+            ros::Publisher pubGroundMarkerOut1_;
+            ros::Publisher pubGroundMarkerOut2_;
             ros::Publisher pubStalkCloudClustersMarker_;
             ros::Publisher pubStalkSeedClustersMarker_;
             ros::Publisher pubStalkLinesMarker_;
@@ -113,5 +118,7 @@ namespace pagslam
             // Stalk
             double eps_;  // maximum distance between points in a cluster
             int minDbscanPts_;   // minimum number of points in a cluster            
+              
+            GroundFeature prev_ground_;
     };
 }

@@ -24,6 +24,8 @@
 #include <sophus/geometry.hpp>
 #include <sophus/se3.hpp>
 
+#include <visualization_msgs/MarkerArray.h>
+
 #define PIDEF 3.14159265
 
 using namespace std;

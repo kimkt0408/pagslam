@@ -100,7 +100,7 @@ namespace ext
     {
         // Downsample the input cloud to reduce the number of points
         pcl::VoxelGrid<PointT> sor;
-        float leafSize = 0.2f; // Adjust this value based on the desired resolution
+        float leafSize = 0.15f; // Adjust this value based on the desired resolution
         sor.setInputCloud(inCloud);
         sor.setLeafSize(leafSize, leafSize, leafSize); // Set the voxel size (leaf size)
         CloudT::Ptr downsampledCloud(new CloudT);
@@ -222,16 +222,86 @@ namespace ext
     //     groundCoefficients.reset(new pcl::ModelCoefficients);
     //     ROS_WARN("No valid segmentation found in %d iterations", nIterations_);
     // }
-   
+    
+    // Function to convert geometry_msgs::Transform to Eigen::Isometry3d
+    Eigen::Isometry3d Extraction::transformToEigen(const geometry_msgs::Transform& transform_msg) {
+        Eigen::Translation3d translation(transform_msg.translation.x,
+                                        transform_msg.translation.y,
+                                        transform_msg.translation.z);
+        Eigen::Quaterniond rotation(transform_msg.rotation.w,
+                                    transform_msg.rotation.x,
+                                    transform_msg.rotation.y,
+                                    transform_msg.rotation.z);
 
-    void Extraction::transformGroundPlane(const tf2::Transform tf, const CloudT::Ptr& groundCloud, pcl::ModelCoefficients::Ptr& groundCoefficients, PagslamInput &pagslamIn)
+        // Combine translation and rotation into an Isometry3d
+        Eigen::Isometry3d transform = translation * rotation;
+        return transform;
+    }
+
+    // Function to convert Eigen::Isometry3d back to geometry_msgs::Transform
+    geometry_msgs::Transform Extraction::eigenToTransform(const Eigen::Isometry3d& transform_eigen) {
+        geometry_msgs::Transform transform_msg;
+
+        transform_msg.translation.x = transform_eigen.translation().x();
+        transform_msg.translation.y = transform_eigen.translation().y();
+        transform_msg.translation.z = transform_eigen.translation().z();
+
+        Eigen::Quaterniond rotation(transform_eigen.rotation());
+        transform_msg.rotation.x = rotation.x();
+        transform_msg.rotation.y = rotation.y();
+        transform_msg.rotation.z = rotation.z();
+        transform_msg.rotation.w = rotation.w();
+
+        return transform_msg;
+    }
+
+    // Function to multiply two geometry_msgs::Transform objects
+    geometry_msgs::Transform Extraction::multiplyTransforms(const geometry_msgs::Transform& t1,
+                                                const geometry_msgs::Transform& t2) {
+        // Convert geometry_msgs::Transform to Eigen::Isometry3d
+        Eigen::Isometry3d eigen_t1 = transformToEigen(t1);
+        Eigen::Isometry3d eigen_t2 = transformToEigen(t2);
+
+        // Perform the multiplication to get A->C
+        Eigen::Isometry3d result = eigen_t1 * eigen_t2;
+
+        // Convert the result back to geometry_msgs::Transform
+        return eigenToTransform(result);
+    }
+
+    // Function to convert SE3 to geometry_msgs::Transform
+    geometry_msgs::Transform Extraction::SE3ToTransform(const Sophus::SE3d& se3)
+    {
+        geometry_msgs::Transform transform_msg;
+
+        // Extract translation
+        Eigen::Vector3d translation = se3.translation();
+        transform_msg.translation.x = translation.x();
+        transform_msg.translation.y = translation.y();
+        transform_msg.translation.z = translation.z();
+
+        // Extract rotation (as a quaternion)
+        Eigen::Quaterniond quaternion = se3.unit_quaternion();
+        transform_msg.rotation.x = quaternion.x();
+        transform_msg.rotation.y = quaternion.y();
+        transform_msg.rotation.z = quaternion.z();
+        transform_msg.rotation.w = quaternion.w();
+
+        return transform_msg;
+    }
+
+    void Extraction::transformGroundPlane(const tf2::Transform tf, const CloudT::Ptr& groundCloud, pcl::ModelCoefficients::Ptr& groundCoefficients, PagslamInput &pagslamIn, const SE3 initialGuess)
     {
         CloudT::Ptr tfm_groundCloud(new CloudT());
         pcl::ModelCoefficients::Ptr tfm_groundCoefficients (new pcl::ModelCoefficients);
         
-        geometry_msgs::Transform transform;
-        tf2::convert(tf, transform);
+        geometry_msgs::Transform transform1;
+        tf2::convert(tf, transform1);
 
+        geometry_msgs::Transform transform2 = SE3ToTransform(initialGuess);
+        
+        geometry_msgs::Transform transform = multiplyTransforms(transform1, transform2);
+        // geometry_msgs::Transform transform = transform1;
         // (1) Point Cloud
         pcl_ros::transformPointCloud(*groundCloud, *tfm_groundCloud, transform);
 
@@ -272,6 +342,60 @@ namespace ext
 
         pagslamIn.groundFeature.coefficients = tfm_groundCoefficients;  
     }
+
+
+    // void Extraction::transformGroundPlane(const tf2::Transform tf, const CloudT::Ptr& groundCloud, pcl::ModelCoefficients::Ptr& groundCoefficients, PagslamInput &pagslamIn)
+    // {
+    //     CloudT::Ptr tfm_groundCloud(new CloudT());
+    //     pcl::ModelCoefficients::Ptr tfm_groundCoefficients (new pcl::ModelCoefficients);
+        
+    //     geometry_msgs::Transform transform1;
+    //     tf2::convert(tf, transform1);
+
+    //     // geometry_msgs::Transform transform2 = SE3ToTransform(pagslamIn.poseEstimate);
+        
+    //     // geometry_msgs::Transform transform = multiplyTransforms(transform1, transform2);
+    //     geometry_msgs::Transform transform = transform1;
+    //     // (1) Point Cloud
+    //     pcl_ros::transformPointCloud(*groundCloud, *tfm_groundCloud, transform);
+
+    //     // (2) Plane Coefficient
+    //     Eigen::Affine3d H_affine = tf2::transformToEigen(transform);
+    //     Eigen::Matrix4d H = H_affine.matrix();
+    //     Eigen::Vector4d coeff_vec;
+
+    //     groundCoefficients->values.resize(4);
+    //     coeff_vec[0] = groundCoefficients->values[0];
+    //     coeff_vec[1] = groundCoefficients->values[1];
+    //     coeff_vec[2] = groundCoefficients->values[2];
+    //     coeff_vec[3] = groundCoefficients->values[3];
+
+    //     Eigen::Matrix4d HInv = H.inverse();  
+    //     Eigen::Matrix4d HInvTrans = HInv.transpose(); 
+    //     Eigen::Vector4d tfm_coeff_vec = HInvTrans * coeff_vec.cast<double>();
+
+    //     tfm_groundCoefficients->values.resize(4);
+    //     tfm_groundCoefficients->values[0] = tfm_coeff_vec[0];
+    //     tfm_groundCoefficients->values[1] = tfm_coeff_vec[1];
+    //     tfm_groundCoefficients->values[2] = tfm_coeff_vec[2];
+    //     tfm_groundCoefficients->values[3] = tfm_coeff_vec[3];
+
+    //     // cout << "Model coefficients: " << groundCoefficients->values[0] << " " 
+    //     //                             << groundCoefficients->values[1] << " "
+    //     //                             << groundCoefficients->values[2] << " " 
+    //     //                             << groundCoefficients->values[3] << " " 
+    //     //                             << -groundCoefficients->values[3]/groundCoefficients->values[2] << endl;
+
+
+    //     tfm_groundCoefficients->header.seq = groundCloud->header.seq;
+    //     tfm_groundCoefficients->header.stamp = groundCloud->header.stamp;
+    //     tfm_groundCoefficients->header.frame_id = robot_frame_id_;
+
+    //     pagslamIn.groundFeature.cloud = tfm_groundCloud;
+    //     pagslamIn.groundFeature.cloud->header.frame_id = robot_frame_id_;
+
+    //     pagslamIn.groundFeature.coefficients = tfm_groundCoefficients;  
+    // }
 
 
     bool Extraction::stalkCloudExtraction(const CloudT::Ptr inCloud, CloudT::Ptr& outCloud)

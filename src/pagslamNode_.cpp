@@ -52,7 +52,9 @@ namespace pagslam
         pubVCloud_ = nh_.advertise<CloudT>("debug/v_cloud_", 1);
 
         // pubGroundMarker_ = nh_.advertise<visualization_msgs::MarkerArray>("debug/ground_marker_", 1);
-        pubGroundMarker_ = nh_.advertise<visualization_msgs::Marker>("debug/ground_marker_", 1);
+        pubGroundMarkerIn_ = nh_.advertise<visualization_msgs::Marker>("debug/ground_marker_in_", 1);
+        pubGroundMarkerOut1_ = nh_.advertise<visualization_msgs::Marker>("debug/ground_marker_out1_", 1);
+        pubGroundMarkerOut2_ = nh_.advertise<visualization_msgs::Marker>("debug/ground_marker_out2_", 1);
         
         pubStalkCloudClustersMarker_ = nh_.advertise<visualization_msgs::MarkerArray>("debug/stalk_cloud_clusters_marker_", 1);
         pubStalkSeedClustersMarker_ = nh_.advertise<visualization_msgs::MarkerArray>("debug/stalk_seed_clusters_marker_", 1);
@@ -187,7 +189,7 @@ namespace pagslam
 
     
     // (2) For a single LiDAR (vertical LiDAR)
-    bool PAGSLAMNode::groundExtraction(CloudT::Ptr& h_cloud, PagslamInput& pagslamIn)
+    bool PAGSLAMNode::groundExtraction(CloudT::Ptr& h_cloud, PagslamInput& pagslamIn, const SE3 initialGuess)
     {
         CloudT::Ptr groundCloud(new CloudT());
         CloudT::Ptr groundCloud_outlier(new CloudT());
@@ -215,16 +217,22 @@ namespace pagslam
         
         // Transform the point cloud and model coefficients to robot_frame
         bool_groundTransformFrame_ = transformFrame(v_lidar_frame_id_, robot_frame_id_, tf_groundSourceToTarget_);
+        // bool_groundTransformFrame_ = transformFrame(v_lidar_frame_id_, map_frame_id_, tf_groundSourceToTarget_);
+        
+        ROS_DEBUG_STREAM("Before Tf Ground: " << groundCoefficients->values[0] << " "
+            << groundCoefficients->values[1] << " "
+            << groundCoefficients->values[2] << " "
+            << groundCoefficients->values[3]);
 
         if (bool_groundTransformFrame_){
-            extractor_->transformGroundPlane(tf_groundSourceToTarget_, groundCloud, groundCoefficients, pagslamIn);
+            extractor_->transformGroundPlane(tf_groundSourceToTarget_, groundCloud, groundCoefficients, pagslamIn, initialGuess);
 
             // if (debugMode_){   
             //     pubGroundCloud_.publish(pagslamIn.groundFeature.cloud);
             //     groundPlaneVisualization(pagslamIn.groundFeature.coefficients);
             // }
             
-            ROS_DEBUG_STREAM("Ground: " << pagslamIn.groundFeature.coefficients->values[0] << " "
+            ROS_DEBUG_STREAM("After Tf Ground: " << pagslamIn.groundFeature.coefficients->values[0] << " "
             << pagslamIn.groundFeature.coefficients->values[1] << " "
             << pagslamIn.groundFeature.coefficients->values[2] << " "
             << pagslamIn.groundFeature.coefficients->values[3]);
@@ -238,10 +246,15 @@ namespace pagslam
                 return false;
             }         
         }
+        else{
+            return false;
+        }
 
         if (debugMode_){   
             pubGroundCloud_.publish(pagslamIn.groundFeature.cloud);
-            groundPlaneVisualization(pagslamIn.groundFeature.coefficients);
+            
+            // visualization_msgs::Marker plane_marker_in = groundPlaneVisualization(pagslamIn.groundFeature, 0);
+            // pubGroundMarkerIn_.publish(plane_marker_in);
         }
         // if (debugMode_){   
         //     pubHCloud_.publish(h_cloud);
@@ -292,6 +305,124 @@ namespace pagslam
 
         return true;
     }
+
+    // // (2) For a single LiDAR (vertical LiDAR)
+    // bool PAGSLAMNode::groundExtraction(CloudT::Ptr& h_cloud, PagslamInput& pagslamIn)
+    // {
+    //     CloudT::Ptr groundCloud(new CloudT());
+    //     CloudT::Ptr groundCloud_outlier(new CloudT());
+    //     pcl::ModelCoefficients::Ptr groundCoefficients (new pcl::ModelCoefficients);
+               
+    //     // ******** (1) Ground plane *********        
+    //     // Filter the point cloud to use points with negative z-values
+    //     pcl::PassThrough<PointT> pass;
+    //     pass.setInputCloud(h_cloud);
+    //     pass.setFilterFieldName("y");
+    //     // pass.setFilterFieldName("z");
+    //     // (1) SIM
+    //     // pass.setFilterLimits(-1.0, -0.2);  // Set the filter limits for negative z-values
+    //     // pass.setFilterLimits(-1.0, -0.5);  // Set the filter limits for negative z-values
+        
+    //     // (2) ACRE
+    //     // pass.setFilterLimits(0.3, 0.5);  // Set the filter limits for positive y-values
+    //     pass.setFilterLimits(0.3, 0.8);  // Set the filter limits for positive y-values
+    //     // pass.setFilterLimits(-1.0, -0.5);  // Set the filter limits for negative z-values
+        
+    //     // pass.setFilterLimitsNegative(false);  // Keep points inside the limits
+    //     pass.filter(*h_cloud);
+
+    //     extractor_->ransac(h_cloud, groundCloud, groundCloud_outlier, groundCoefficients);
+        
+    //     // Transform the point cloud and model coefficients to robot_frame
+    //     bool_groundTransformFrame_ = transformFrame(v_lidar_frame_id_, robot_frame_id_, tf_groundSourceToTarget_);
+    //     // bool_groundTransformFrame_ = transformFrame(v_lidar_frame_id_, map_frame_id_, tf_groundSourceToTarget_);
+        
+    //     ROS_DEBUG_STREAM("Before Tf Ground: " << groundCoefficients->values[0] << " "
+    //         << groundCoefficients->values[1] << " "
+    //         << groundCoefficients->values[2] << " "
+    //         << groundCoefficients->values[3]);
+
+    //     if (bool_groundTransformFrame_){
+    //         extractor_->transformGroundPlane(tf_groundSourceToTarget_, groundCloud, groundCoefficients, pagslamIn);
+
+    //         // if (debugMode_){   
+    //         //     pubGroundCloud_.publish(pagslamIn.groundFeature.cloud);
+    //         //     groundPlaneVisualization(pagslamIn.groundFeature.coefficients);
+    //         // }
+            
+    //         ROS_DEBUG_STREAM("After Tf Ground: " << pagslamIn.groundFeature.coefficients->values[0] << " "
+    //         << pagslamIn.groundFeature.coefficients->values[1] << " "
+    //         << pagslamIn.groundFeature.coefficients->values[2] << " "
+    //         << pagslamIn.groundFeature.coefficients->values[3]);
+
+    //         // if (pagslamIn.groundFeature.coefficients->values[3] < 0 ||
+    //         // abs(pagslamIn.groundFeature.coefficients->values[3]/pagslamIn.groundFeature.coefficients->values[2]) > 1){    // If the extracted ground plane is not accurate
+    //         //     return false;
+    //         // }      
+
+    //         if (abs(pagslamIn.groundFeature.coefficients->values[3]/pagslamIn.groundFeature.coefficients->values[2]) > 1){    // If the extracted ground plane is not accurate
+    //             return false;
+    //         }         
+    //     }
+    //     else{
+    //         return false;
+    //     }
+
+    //     if (debugMode_){   
+    //         pubGroundCloud_.publish(pagslamIn.groundFeature.cloud);
+            
+    //         // visualization_msgs::Marker plane_marker_in = groundPlaneVisualization(pagslamIn.groundFeature, 0);
+    //         // pubGroundMarkerIn_.publish(plane_marker_in);
+    //     }
+    //     // if (debugMode_){   
+    //     //     pubHCloud_.publish(h_cloud);
+    //     // }
+
+    //     // // Add visualization marker
+    //     // visualization_msgs::Marker plane_marker;
+    //     // plane_marker.header.frame_id = robot_frame_id_;  // Replace with your frame
+    //     // plane_marker.header.stamp = ros::Time::now();
+    //     // plane_marker.ns = "ground_plane";
+    //     // plane_marker.id = 0;
+    //     // plane_marker.type = visualization_msgs::Marker::CUBE;
+    //     // plane_marker.action = visualization_msgs::Marker::ADD;
+
+    //     // // Calculate the normal and centroid of the plane
+    //     // Eigen::Vector3f normal(pagslamIn.groundFeature.coefficients->values[0],
+    //     //                        pagslamIn.groundFeature.coefficients->values[1],
+    //     //                        pagslamIn.groundFeature.coefficients->values[2]);
+
+    //     // float d = pagslamIn.groundFeature.coefficients->values[3];
+    //     // Eigen::Vector3f centroid(0, 0, -d / normal.norm());
+
+    //     // plane_marker.pose.position.x = centroid.x();
+    //     // plane_marker.pose.position.y = centroid.y();
+    //     // plane_marker.pose.position.z = centroid.z();
+
+    //     // // Calculate the orientation from the normal vector
+    //     // Eigen::Quaternionf q;
+    //     // q.setFromTwoVectors(Eigen::Vector3f(0, 0, 1), normal.normalized());
+    //     // plane_marker.pose.orientation.x = q.x();
+    //     // plane_marker.pose.orientation.y = q.y();
+    //     // plane_marker.pose.orientation.z = q.z();
+    //     // plane_marker.pose.orientation.w = q.w();
+
+    //     // // Set the size of the plane
+    //     // plane_marker.scale.x = 10.0;
+    //     // plane_marker.scale.y = 10.0;
+    //     // plane_marker.scale.z = 0.01;  // Thickness of the plane
+
+    //     // // Set the color and transparency
+    //     // plane_marker.color.a = 0.5;  // Transparency
+    //     // plane_marker.color.r = 0.0;
+    //     // plane_marker.color.g = 1.0;
+    //     // plane_marker.color.b = 0.0;
+
+    //     // // Publish the marker
+    //     // pubGroundMarker_.publish(plane_marker);
+
+    //     return true;
+    // }
 
 
     bool PAGSLAMNode::stalkExtraction(CloudT::Ptr& v_cloud, PagslamInput& pagslamIn)
@@ -420,10 +551,31 @@ namespace pagslam
 
         // SEGMENTATION
         // bool_ground_ = groundExtraction(v_cloud, pagslamIn);
-        bool_ground_ = groundExtraction(h_cloud, pagslamIn);
-        bool_stalk_ = stalkExtraction(v_cloud, pagslamIn);    
+        // bool_ground_ = groundExtraction(h_cloud, pagslamIn);
+        bool_ground_ = groundExtraction(h_cloud, pagslamIn, initialGuess);
+        
+        if (!bool_ground_){
+            cout << "********" << endl;
+            return false;
+        }
+
+        bool_stalk_ = stalkExtraction(v_cloud, pagslamIn);  
+
+        visualization_msgs::Marker plane_marker_in = groundPlaneVisualization(pagslamIn.groundFeature, 0);        
+        pubGroundMarkerIn_.publish(plane_marker_in);
+
+        // if (!firstScan_){
+        //     visualization_msgs::Marker plane_marker_out2 = groundPlaneVisualization(prev_ground_, 2);
+        //     pubGroundMarkerOut2_.publish(plane_marker_out2);
+        // }
 
         bool success = runPagslam(pagslamIn, pagslamOut);
+
+        // visualization_msgs::Marker plane_marker_out1 = groundPlaneVisualization(pagslamOut.ground, 1);
+        // pubGroundMarkerOut1_.publish(plane_marker_out1);
+
+        prev_ground_ = pagslamOut.ground;
+
 
         semanticMap_.updateMap(pagslamOut.stalks, pagslamOut.matches);
 
@@ -510,8 +662,6 @@ namespace pagslam
                 pose_msg.pose.pose.orientation.w = orientation.w();
 
                 
-                
-                
                 // Set the header of the message
                 pose_msg.header.frame_id = map_frame_id_; // Set the frame of the pose
                 ros::Time pose_msg_stamp = pcl_conversions::fromPCL(pagslamOut.ground.coefficients->header).stamp;
@@ -534,7 +684,7 @@ namespace pagslam
             transformStamped = tf_buffer_.lookupTransform(target_frame, source_frame, ros::Time(0));
         }
         catch (tf2::TransformException &ex) {
-            ROS_WARN("%s",ex.what());
+            // ROS_WARN("%s",ex.what());
             return false;
         }
         // Convert the transform to an Eigen transform
@@ -544,7 +694,7 @@ namespace pagslam
     }
 
 
-    void PAGSLAMNode::groundPlaneVisualization(const pcl::ModelCoefficients::Ptr groundCoefficients)
+    visualization_msgs::Marker PAGSLAMNode::groundPlaneVisualization(const GroundFeature groundFeature, int groundType)
     {
         // int num_markers = 360;
         // visualization_msgs::MarkerArray markers;
@@ -588,11 +738,15 @@ namespace pagslam
         plane_marker.action = visualization_msgs::Marker::ADD;
 
         // Calculate the normal and centroid of the plane
-        Eigen::Vector3f normal(groundCoefficients->values[0],
-                               groundCoefficients->values[1],
-                               groundCoefficients->values[2]);
+        Eigen::Vector3f normal(groundFeature.coefficients->values[0],
+                               groundFeature.coefficients->values[1],
+                               groundFeature.coefficients->values[2]);
 
-        float d = groundCoefficients->values[3];
+        float d = groundFeature.coefficients->values[3];
+        
+        // Calculate the centroid of the point cloud
+        // Eigen::Vector4f ground_centroid;
+        // pcl::compute3DCentroid(*groundFeature.cloud, ground_centroid);
         Eigen::Vector3f centroid(0, 0, -d / normal.norm());
 
         plane_marker.pose.position.x = centroid.x();
@@ -614,12 +768,29 @@ namespace pagslam
 
         // Set the color and transparency
         plane_marker.color.a = 0.5;  // Transparency
-        plane_marker.color.r = 0.0;
-        plane_marker.color.g = 1.0;
-        plane_marker.color.b = 0.0;
 
+        if (groundType == 0){
+            plane_marker.color.r = 0.0;
+            plane_marker.color.g = 1.0;
+            plane_marker.color.b = 0.0;
+            cout << "Before : " << normal << endl;
+        }
+        else if (groundType == 1){
+            plane_marker.color.r = 1.0;
+            plane_marker.color.g = 0.0;
+            plane_marker.color.b = 0.0;
+            cout << "After : " << normal << endl;
+        }
+        else if (groundType == 2){
+            plane_marker.color.r = 0.0;
+            plane_marker.color.g = 0.0;
+            plane_marker.color.b = 1.0;
+            cout << "Prev : " << normal << endl;
+        }
+
+        return plane_marker;
         // Publish the marker
-        pubGroundMarker_.publish(plane_marker);
+        // pubGroundMarker_.publish(plane_marker);
     }
 
 

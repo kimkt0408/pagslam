@@ -62,8 +62,9 @@ namespace ext
             Extraction operator=(const Extraction &) = delete;
 
             void ransac(const CloudT::Ptr inCloud, CloudT::Ptr& outCloud_inlier, CloudT::Ptr& outCloud_outlier, pcl::ModelCoefficients::Ptr& groundCoefficients);
-            void transformGroundPlane(const tf2::Transform tf, const CloudT::Ptr& groundCloud, pcl::ModelCoefficients::Ptr& groundCoefficients, PagslamInput &pagslamIn);
-        
+            // void transformGroundPlane(const tf2::Transform tf, const CloudT::Ptr& groundCloud, pcl::ModelCoefficients::Ptr& groundCoefficients, PagslamInput &pagslamIn);
+            void transformGroundPlane(const tf2::Transform tf, const CloudT::Ptr& groundCloud, pcl::ModelCoefficients::Ptr& groundCoefficients, PagslamInput &pagslamIn, const SE3 initialGuess);
+    
             bool stalkCloudExtraction(const CloudT::Ptr inCloud, CloudT::Ptr& outCloud);
             // bool stalkCloudClustersExtraction(CloudT::Ptr inCloud, std::vector<CloudT::Ptr>& outCloudClusters);
             bool stalkCloudClustersExtraction(CloudT::Ptr inCloud, std::vector<CloudT::Ptr>& outCloudClusters, pcl::ModelCoefficients::Ptr& groundCoefficients);
@@ -79,7 +80,11 @@ namespace ext
             void transformStalkCloud(tf2::Transform tf, std::vector<CloudT::Ptr>& inCloudClusters, std::vector<CloudT::Ptr>& tfm_inCloudClusters);
                         
             void dbscan(pcl::PointCloud<pcl::PointXYZ>::Ptr inCloud, double eps, int minPts, std::vector<pcl::PointIndices>& cluster_indices);
-
+            
+            geometry_msgs::Transform SE3ToTransform(const Sophus::SE3d& se3);
+            Eigen::Isometry3d transformToEigen(const geometry_msgs::Transform& transform_msg);
+            geometry_msgs::Transform eigenToTransform(const Eigen::Isometry3d& transform_eigen);
+            geometry_msgs::Transform multiplyTransforms(const geometry_msgs::Transform& t1, const geometry_msgs::Transform& t2);
             // void downsamplePointCloud(CloudT::Ptr cloud, float leafSize);
     
         private:

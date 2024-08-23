@@ -256,8 +256,8 @@ namespace pagslam
         return true;
     }
 
-    bool PAGSLAMNode::run(const SE3 initialGuess, const SE3 prevKeyPose, CloudT::Ptr v_cloud, StampedSE3 odom, SE3 &outPose)
-    // bool PAGSLAMNode::run(const SE3 initialGuess, const SE3 prevKeyPose, CloudT::Ptr h_cloud, CloudT::Ptr v_cloud, StampedSE3 odom, SE3 &outPose)
+    // bool PAGSLAMNode::run(const SE3 initialGuess, const SE3 prevKeyPose, CloudT::Ptr v_cloud, StampedSE3 odom, SE3 &outPose)
+    bool PAGSLAMNode::run(const SE3 initialGuess, const SE3 prevKeyPose, CloudT::Ptr h_cloud, CloudT::Ptr v_cloud, StampedSE3 odom, SE3 &outPose)
     {
         PagslamInput pagslamIn = PagslamInput();
         PagslamOutput pagslamOut = PagslamOutput();
@@ -280,8 +280,8 @@ namespace pagslam
         ROS_DEBUG_STREAM("Entering Callback. Lidar data stamp: " << odom.stamp);
 
         // SEGMENTATION
-        bool_ground_ = groundExtraction(v_cloud, pagslamIn);
-        // bool_ground_ = groundExtraction(h_cloud, pagslamIn);
+        // bool_ground_ = groundExtraction(v_cloud, pagslamIn);
+        bool_ground_ = groundExtraction(h_cloud, pagslamIn);
         bool_stalk_ = stalkExtraction(v_cloud, pagslamIn);    
 
         bool success = runPagslam(pagslamIn, pagslamOut);

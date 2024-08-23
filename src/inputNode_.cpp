@@ -108,13 +108,15 @@ InputManager::InputManager(ros::NodeHandle nh) : nh_(nh), tf_listener_{tf_buffer
     // (2) new-ACRE-long
     // nh_.param<float>("min_odom_distance", minOdomDistance_, 0.1); //0.05
     // nh_.param<float>("max_time_difference", maxTimeDifference_, 0.05); //0.05
+    
     // Test: 2024-08
-    nh_.param<float>("min_odom_distance", minOdomDistance_, 0.001); //0.05
-    nh_.param<float>("max_time_difference", maxTimeDifference_, 0.05); //0.05
+    nh_.param<float>("min_odom_distance", minOdomDistance_, 0.1); //0.05
+    nh_.param<float>("max_time_difference", maxTimeDifference_, 0.2); //0.05
 
     odomFreqFilter_ = nh_.param("odom_freq_filter", 1);
 
-    maxQueueSize_ = nh_.param("maxQueueSize", 30);
+    // maxQueueSize_ = nh_.param("maxQueueSize", 30);
+    maxQueueSize_ = nh_.param("maxQueueSize", 5);
     // odomFreqFilter_ = nh_.param("odom_freq_filter", 20);
 
     publishTf_ = nh_.param("publish_tf", true);
@@ -201,10 +203,10 @@ void InputManager::v_PCCb_(const sensor_msgs::PointCloud2ConstPtr &v_cloudMsg)
 {   
     // ROS_DEBUG_STREAM("v_PCCb_ running in thread: " << std::this_thread::get_id());
 
-    h_pcQueue_.push(v_cloudMsg);
-    if (h_pcQueue_.size() > maxQueueSize_){
-        h_pcQueue_.pop();
-    }
+    // h_pcQueue_.push(v_cloudMsg);
+    // if (h_pcQueue_.size() > maxQueueSize_){
+    //     h_pcQueue_.pop();
+    // }
 
     v_pcQueue_.push(v_cloudMsg);
     if (v_pcQueue_.size() > maxQueueSize_){
@@ -215,7 +217,11 @@ void InputManager::v_PCCb_(const sensor_msgs::PointCloud2ConstPtr &v_cloudMsg)
 
 bool InputManager::Run()
 {
-    if (odomQueue_.empty() || h_pcQueue_.empty() || v_pcQueue_.empty()){
+    // if (odomQueue_.empty() || h_pcQueue_.empty() || v_pcQueue_.empty()){
+    //     return false;
+    // }
+
+    if (odomQueue_.empty() || v_pcQueue_.empty()){
         return false;
     }
 
@@ -303,45 +309,78 @@ bool InputManager::callPAGSLAM(SE3 relativeMotion, StampedSE3 odom)
 }
 
 
+// int InputManager::FindPC(const ros::Time stamp, CloudT::Ptr h_cloud, CloudT::Ptr v_cloud)
+// {
+//     if (h_pcQueue_.empty() || v_pcQueue_.empty()){
+//         return false;
+//     }
+        
+//     while (!h_pcQueue_.empty() && !v_pcQueue_.empty()){
+//         ROS_DEBUG_STREAM("!!!!!!:\n h_cloud: " << (h_pcQueue_.front()->header.stamp.toSec()-stamp.toSec()) << "\n v_cloud: " << (v_pcQueue_.front()->header.stamp.toSec()-stamp.toSec()) << "\n odom:" << stamp.toSec());
+                       
+//         if (h_pcQueue_.front()->header.stamp.toSec() < stamp.toSec() - maxTimeDifference_){
+//             // ROS_DEBUG_STREAM("H_PCLOUD MSG TOO OLD");
+//             h_pcQueue_.pop();
+//         }
+//         else if (h_pcQueue_.front()->header.stamp.toSec() > stamp.toSec() + maxTimeDifference_){
+//             // ROS_DEBUG_STREAM("H_PCLOUD MSG TOO NEW");
+//             return CLOUD_TOO_NEW;
+//         }
+//         else{
+//             if (v_pcQueue_.front()->header.stamp.toSec() < stamp.toSec() - maxTimeDifference_){
+//                 // ROS_DEBUG_STREAM("V_PCLOUD MSG TOO OLD");
+//                 v_pcQueue_.pop();
+//             }
+//             else if (v_pcQueue_.front()->header.stamp.toSec() > stamp.toSec() + maxTimeDifference_){
+//                 // ROS_DEBUG_STREAM("V_PCLOUD MSG TOO NEW");
+//                 return CLOUD_TOO_NEW;
+//             }
+//             else{
+//                 ROS_DEBUG_STREAM("Calling PAGSLAM");
+                
+//                 pcl::fromROSMsg(*h_pcQueue_.front(), *h_cloud);
+//                 h_pcQueue_.pop();
+
+//                 pcl::fromROSMsg(*v_pcQueue_.front(), *v_cloud);
+//                 v_pcQueue_.pop();
+
+//                 return CLOUD_FOUND;
+//             }
+//         }
+//     }
+//     return CLOUD_TOO_OLD;
+// }
+
 int InputManager::FindPC(const ros::Time stamp, CloudT::Ptr h_cloud, CloudT::Ptr v_cloud)
 {
-    if (h_pcQueue_.empty() || v_pcQueue_.empty()){
+    if (v_pcQueue_.empty()){
         return false;
     }
         
-    while (!h_pcQueue_.empty() && !v_pcQueue_.empty()){
-        if (h_pcQueue_.front()->header.stamp.toSec() < stamp.toSec() - maxTimeDifference_){
-            ROS_DEBUG_STREAM("H_PCLOUD MSG TOO OLD");
-            h_pcQueue_.pop();
-        }
-        else if (h_pcQueue_.front()->header.stamp.toSec() > stamp.toSec() + maxTimeDifference_){
-            ROS_DEBUG_STREAM("H_PCLOUD MSG TOO NEW");
+    while (!v_pcQueue_.empty()){
+        ROS_DEBUG_STREAM("!!!!!!: \n v_cloud: " << (v_pcQueue_.front()->header.stamp.toSec()-stamp.toSec()) << "\n odom:" << stamp.toSec());
+                       
+        if (v_pcQueue_.front()->header.stamp.toSec() < stamp.toSec() - maxTimeDifference_){
+                // ROS_DEBUG_STREAM("V_PCLOUD MSG TOO OLD");
+                v_pcQueue_.pop();
+            }
+        else if (v_pcQueue_.front()->header.stamp.toSec() > stamp.toSec() + maxTimeDifference_){
+            // ROS_DEBUG_STREAM("V_PCLOUD MSG TOO NEW");
             return CLOUD_TOO_NEW;
         }
         else{
-            if (v_pcQueue_.front()->header.stamp.toSec() < stamp.toSec() - maxTimeDifference_){
-                ROS_DEBUG_STREAM("V_PCLOUD MSG TOO OLD");
-                v_pcQueue_.pop();
-            }
-            else if (v_pcQueue_.front()->header.stamp.toSec() > stamp.toSec() + maxTimeDifference_){
-                ROS_DEBUG_STREAM("V_PCLOUD MSG TOO NEW");
-                return CLOUD_TOO_NEW;
-            }
-            else{
-                ROS_DEBUG_STREAM("Calling PAGSLAM:\n h_cloud: " << h_pcQueue_.front()->header.stamp.toSec() << "\n v_cloud: " << v_pcQueue_.front()->header.stamp.toSec() << "\n odom:" << stamp.toSec());
-                
-                pcl::fromROSMsg(*h_pcQueue_.front(), *h_cloud);
-                h_pcQueue_.pop();
+            ROS_DEBUG_STREAM("Calling PAGSLAM");
+            
+            pcl::fromROSMsg(*v_pcQueue_.front(), *h_cloud);
+            pcl::fromROSMsg(*v_pcQueue_.front(), *v_cloud);
+            v_pcQueue_.pop();
 
-                pcl::fromROSMsg(*v_pcQueue_.front(), *v_cloud);
-                v_pcQueue_.pop();
-
-                return CLOUD_FOUND;
-            }
+            return CLOUD_FOUND;
         }
     }
     return CLOUD_TOO_OLD;
 }
+
 
 
 void InputManager::Odom2SlamTf(ros::Time stamp)
