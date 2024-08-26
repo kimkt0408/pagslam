@@ -658,7 +658,8 @@ namespace pagslam
         GroundFeature lastGroundFeature = mapFeatures.back();
 
         Vector4 scene_coeff (currFeature.coefficients->values[0], currFeature.coefficients->values[1], currFeature.coefficients->values[2], currFeature.coefficients->values[3]);
-        Vector4 model_coeff (lastGroundFeature.coefficients->values[0], lastGroundFeature.coefficients->values[1], lastGroundFeature.coefficients->values[2], lastGroundFeature.coefficients->values[3]);
+        // Vector4 model_coeff (lastGroundFeature.coefficients->values[0], lastGroundFeature.coefficients->values[1], lastGroundFeature.coefficients->values[2], lastGroundFeature.coefficients->values[3]);
+        Vector4 model_coeff (0.0, 0.0, 1.0, 0.00);
         
         double scene_model_diff = scene_coeff[0]*model_coeff[0] + scene_coeff[1]*model_coeff[1];
 

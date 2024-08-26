@@ -217,7 +217,7 @@ namespace pagslam
         
         // Transform the point cloud and model coefficients to robot_frame
         bool_groundTransformFrame_ = transformFrame(v_lidar_frame_id_, robot_frame_id_, tf_groundSourceToTarget_);
-        // bool_groundTransformFrame_ = transformFrame(v_lidar_frame_id_, map_frame_id_, tf_groundSourceToTarget_);
+        // bool_groundTransformFrame_ = transformFrame(robot_frame_id_, v_lidar_frame_id_, tf_groundSourceToTarget_);
         
         ROS_DEBUG_STREAM("Before Tf Ground: " << groundCoefficients->values[0] << " "
             << groundCoefficients->values[1] << " "
@@ -437,7 +437,7 @@ namespace pagslam
 
         // Transform the point cloud and model coefficients to robot_frame
         bool_stalkTransformFrame_ = transformFrame(v_lidar_frame_id_, robot_frame_id_, tf_stalkSourceToTarget_);
-    
+        
         if (!bool_stalkTransformFrame_){
             return false;
         }
@@ -546,6 +546,12 @@ namespace pagslam
         //     return false;
         // }
 
+        // Assuming 'poseEstimate' is of type Sophus::SE3d
+        std::cout << "poseEstimate (SE3):" << std::endl;
+        std::cout << "Rotation Matrix:" << std::endl;
+        std::cout << poseEstimate.rotationMatrix() << std::endl;
+        std::cout << "Translation Vector:" << std::endl;
+        std::cout << poseEstimate.translation().transpose() << std::endl;
         
         ROS_DEBUG_STREAM("Entering Callback. Lidar data stamp: " << odom.stamp);
 
@@ -553,26 +559,27 @@ namespace pagslam
         // bool_ground_ = groundExtraction(v_cloud, pagslamIn);
         // bool_ground_ = groundExtraction(h_cloud, pagslamIn);
         bool_ground_ = groundExtraction(h_cloud, pagslamIn, initialGuess);
+        // bool_ground_ = groundExtraction(h_cloud, pagslamIn, poseEstimate);
         
-        if (!bool_ground_){
-            cout << "********" << endl;
-            return false;
-        }
+        // if (!bool_ground_){
+        //     cout << "********" << endl;
+        //     return false;
+        // }
 
         bool_stalk_ = stalkExtraction(v_cloud, pagslamIn);  
 
         visualization_msgs::Marker plane_marker_in = groundPlaneVisualization(pagslamIn.groundFeature, 0);        
         pubGroundMarkerIn_.publish(plane_marker_in);
 
-        // if (!firstScan_){
-        //     visualization_msgs::Marker plane_marker_out2 = groundPlaneVisualization(prev_ground_, 2);
-        //     pubGroundMarkerOut2_.publish(plane_marker_out2);
-        // }
+        if (!firstScan_){
+            visualization_msgs::Marker plane_marker_out2 = groundPlaneVisualization(prev_ground_, 2);
+            pubGroundMarkerOut2_.publish(plane_marker_out2);
+        }
 
         bool success = runPagslam(pagslamIn, pagslamOut);
 
-        // visualization_msgs::Marker plane_marker_out1 = groundPlaneVisualization(pagslamOut.ground, 1);
-        // pubGroundMarkerOut1_.publish(plane_marker_out1);
+        visualization_msgs::Marker plane_marker_out1 = groundPlaneVisualization(pagslamOut.ground, 1);
+        pubGroundMarkerOut1_.publish(plane_marker_out1);
 
         prev_ground_ = pagslamOut.ground;
 
@@ -690,6 +697,26 @@ namespace pagslam
         // Convert the transform to an Eigen transform
         tf2::fromMsg(transformStamped.transform, tf_sourceToTarget_);
         
+        // // Get the translation part
+        // tf2::Vector3 translation = tf_sourceToTarget_.getOrigin();
+
+        // // Get the rotation part (as a quaternion)
+        // tf2::Quaternion rotation = tf_sourceToTarget_.getRotation();
+
+        // // Print the translation
+        // cout << source_frame << " " << target_frame << endl;
+        // std::cout << "Translation: " << std::endl;
+        // std::cout << "x: " << translation.x() << ", "
+        //         << "y: " << translation.y() << ", "
+        //         << "z: " << translation.z() << std::endl;
+
+        // // Print the rotation
+        // std::cout << "Rotation (quaternion): " << std::endl;
+        // std::cout << "x: " << rotation.x() << ", "
+        //         << "y: " << rotation.y() << ", "
+        //         << "z: " << rotation.z() << ", "
+        //         << "w: " << rotation.w() << std::endl;
+                
         return true;
     }
 
@@ -731,6 +758,7 @@ namespace pagslam
         // Add visualization marker
         visualization_msgs::Marker plane_marker;
         plane_marker.header.frame_id = robot_frame_id_;  // Replace with your frame
+        // plane_marker.header.frame_id = "map";  // Replace with your frame
         plane_marker.header.stamp = ros::Time::now();
         plane_marker.ns = "ground_plane";
         plane_marker.id = 0;

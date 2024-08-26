@@ -300,8 +300,10 @@ namespace ext
 
         geometry_msgs::Transform transform2 = SE3ToTransform(initialGuess);
         
+        // geometry_msgs::Transform transform = multiplyTransforms(transform2, transform1);
         geometry_msgs::Transform transform = multiplyTransforms(transform1, transform2);
         // geometry_msgs::Transform transform = transform1;
+
         // (1) Point Cloud
         pcl_ros::transformPointCloud(*groundCloud, *tfm_groundCloud, transform);
 
@@ -326,12 +328,17 @@ namespace ext
         tfm_groundCoefficients->values[2] = tfm_coeff_vec[2];
         tfm_groundCoefficients->values[3] = tfm_coeff_vec[3];
 
-        // cout << "Model coefficients: " << groundCoefficients->values[0] << " " 
-        //                             << groundCoefficients->values[1] << " "
-        //                             << groundCoefficients->values[2] << " " 
-        //                             << groundCoefficients->values[3] << " " 
-        //                             << -groundCoefficients->values[3]/groundCoefficients->values[2] << endl;
-
+        cout << "Before: Model coefficients: " << groundCoefficients->values[0] << " " 
+                                    << groundCoefficients->values[1] << " "
+                                    << groundCoefficients->values[2] << " " 
+                                    << groundCoefficients->values[3] << " " 
+                                    << -groundCoefficients->values[3]/groundCoefficients->values[2] << endl;
+        
+        cout << "After: Model coefficients: " << tfm_groundCoefficients->values[0] << " " 
+                                    << tfm_groundCoefficients->values[1] << " "
+                                    << tfm_groundCoefficients->values[2] << " " 
+                                    << tfm_groundCoefficients->values[3] << " " 
+                                    << -tfm_groundCoefficients->values[3]/tfm_groundCoefficients->values[2] << endl;
 
         tfm_groundCoefficients->header.seq = groundCloud->header.seq;
         tfm_groundCoefficients->header.stamp = groundCloud->header.stamp;
@@ -341,6 +348,15 @@ namespace ext
         pagslamIn.groundFeature.cloud->header.frame_id = robot_frame_id_;
 
         pagslamIn.groundFeature.coefficients = tfm_groundCoefficients;  
+
+        // tfm_groundCoefficients->header.seq = groundCloud->header.seq;
+        // tfm_groundCoefficients->header.stamp = groundCloud->header.stamp;
+        // tfm_groundCoefficients->header.frame_id = "map";
+
+        // pagslamIn.groundFeature.cloud = tfm_groundCloud;
+        // pagslamIn.groundFeature.cloud->header.frame_id = "map";
+
+        // pagslamIn.groundFeature.coefficients = tfm_groundCoefficients; 
     }
 
 
