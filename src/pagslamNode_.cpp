@@ -1011,8 +1011,10 @@ namespace pagslam
             visualization_msgs::Marker marker;
             marker.header.frame_id = map_frame_id_;
             
-            ros::Time stamp = pcl_conversions::fromPCL(stalk->header).stamp;
-            marker.header.stamp = stamp;
+            // ros::Time stamp = pcl_conversions::fromPCL(stalk->header).stamp;
+            // marker.header.stamp = stamp;
+            marker.header.stamp = ros::Time::now();
+
 
             marker.id = id++;
             marker.type = visualization_msgs::Marker::POINTS;

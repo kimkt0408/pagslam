@@ -39,7 +39,7 @@ namespace pagslam
 
         // TEST
         stalkMatchThresh_ = 0.04;  // 0.12 // 0.3 
-        minStalkMatches_ = 3; //2;
+        minStalkMatches_ = 2; //2;
         rangeGroundMatch_ = 3; // 4
         AddNewStalkThreshDist_ = 0.06;
         maxNumIterations_ = 100;
@@ -670,6 +670,12 @@ namespace pagslam
         // Vector4 model_coeff (lastGroundFeature.coefficients->values[0], lastGroundFeature.coefficients->values[1], lastGroundFeature.coefficients->values[2], lastGroundFeature.coefficients->values[3]);
         Vector4 model_coeff (0.0, 0.0, 1.0, 0.0);
         
+        cout << "**************" << scene_coeff << endl;
+        if (abs(scene_coeff[2]) < 0.8){
+            cout << "**************" << endl;
+            success = false;
+        }
+
         double scene_model_diff = scene_coeff[0]*model_coeff[0] + scene_coeff[1]*model_coeff[1];
 
         // cout << scene_coeff << " " << model_coeff << " " << scene_model_diff << endl;
@@ -771,7 +777,7 @@ namespace pagslam
         // std::cout << summary.FullReport() << "\n";
         ceres::Solve(options, &problem, &summary);
     
-        success = (summary.termination_type == 0);
+        // success = (summary.termination_type == 0);
         
         // std::cout << summary.FullReport() << "\n" << summary.termination_type << " " << success << endl;
             

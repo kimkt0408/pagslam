@@ -101,10 +101,13 @@ namespace ext
         // Downsample the input cloud to reduce the number of points
         pcl::VoxelGrid<PointT> sor;
         float leafSize = 0.15f; // Adjust this value based on the desired resolution
+        // float leafSize = 0.08f; // Adjust this value based on the desired resolution
         sor.setInputCloud(inCloud);
         sor.setLeafSize(leafSize, leafSize, leafSize); // Set the voxel size (leaf size)
         CloudT::Ptr downsampledCloud(new CloudT);
         sor.filter(*downsampledCloud);
+        
+        // Print the number of points in the downsampled cloud
         
         pcl::PointIndices inliers;
         pcl::ModelCoefficients groundCoeffs;
