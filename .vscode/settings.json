@@ -70,6 +70,7 @@
         "hash_set": "cpp",
         "forward_list": "cpp",
         "core": "cpp",
-        "numericaldiff": "cpp"
+        "numericaldiff": "cpp",
+        "csignal": "cpp"
     }
 }

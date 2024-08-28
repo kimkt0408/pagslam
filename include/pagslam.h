@@ -89,6 +89,7 @@ namespace pagslam
             void printCostCallback(const ceres::IterationSummary& summary);
 
             bool runPagslam(PagslamInput &in, PagslamOutput &out);
+            // bool runPagslam(PagslamInput &in, PagslamOutput &out, const SE3 initialGuess);
             
             std::vector<FeatureMatch<StalkFeature::Ptr>> matchStalks(const SE3 &tf, const std::vector<StalkFeature::Ptr> &currFeatures, std::vector<StalkFeature::Ptr> &mapFeatures, const Scalar distThresh);
             

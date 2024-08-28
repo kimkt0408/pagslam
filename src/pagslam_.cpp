@@ -29,9 +29,17 @@ namespace pagslam
         // AddNewStalkThreshDist_ = 0.08;
         // maxNumIterations_ = 100;
 
-        // (4) new ACRE-long
-        stalkMatchThresh_ = 0.06;  // 0.12 // 0.3 
-        minStalkMatches_ = 2; //2;
+        // // (4) new ACRE-long
+        // stalkMatchThresh_ = 0.06;  // 0.12 // 0.3 
+        // minStalkMatches_ = 2; //2;
+        // rangeGroundMatch_ = 3; // 4
+        // AddNewStalkThreshDist_ = 0.06;
+        // maxNumIterations_ = 100;
+        // huberLossThresh_ = 1; // 0.1
+
+        // TEST
+        stalkMatchThresh_ = 0.04;  // 0.12 // 0.3 
+        minStalkMatches_ = 3; //2;
         rangeGroundMatch_ = 3; // 4
         AddNewStalkThreshDist_ = 0.06;
         maxNumIterations_ = 100;
@@ -280,7 +288,7 @@ namespace pagslam
                 if (d < bestDist) {
                     bestDist = d;
                     bestMapFeature = mf;
-                    // cout << bestDist << endl;
+                    // cout << bestDist << endl << cf_proj->root << endl << mf->root << endl;
                 }
             }
 
@@ -552,6 +560,7 @@ namespace pagslam
             problem.AddParameterBlock(params, 6);
             // setting z, roll and pitch as constant
             ceres::SubsetParameterization *subset_parameterization =
+                // new ceres::SubsetParameterization(6, {2, 3, 4});
                 new ceres::SubsetParameterization(6, {1, 2, 3, 4});
             problem.SetParameterization(params, subset_parameterization);
 
@@ -659,7 +668,7 @@ namespace pagslam
 
         Vector4 scene_coeff (currFeature.coefficients->values[0], currFeature.coefficients->values[1], currFeature.coefficients->values[2], currFeature.coefficients->values[3]);
         // Vector4 model_coeff (lastGroundFeature.coefficients->values[0], lastGroundFeature.coefficients->values[1], lastGroundFeature.coefficients->values[2], lastGroundFeature.coefficients->values[3]);
-        Vector4 model_coeff (0.0, 0.0, 1.0, 0.00);
+        Vector4 model_coeff (0.0, 0.0, 1.0, 0.0);
         
         double scene_model_diff = scene_coeff[0]*model_coeff[0] + scene_coeff[1]*model_coeff[1];
 

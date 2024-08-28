@@ -219,10 +219,10 @@ namespace pagslam
         bool_groundTransformFrame_ = transformFrame(v_lidar_frame_id_, robot_frame_id_, tf_groundSourceToTarget_);
         // bool_groundTransformFrame_ = transformFrame(robot_frame_id_, v_lidar_frame_id_, tf_groundSourceToTarget_);
         
-        ROS_DEBUG_STREAM("Before Tf Ground: " << groundCoefficients->values[0] << " "
-            << groundCoefficients->values[1] << " "
-            << groundCoefficients->values[2] << " "
-            << groundCoefficients->values[3]);
+        // ROS_DEBUG_STREAM("Before Tf Ground: " << groundCoefficients->values[0] << " "
+        //     << groundCoefficients->values[1] << " "
+        //     << groundCoefficients->values[2] << " "
+        //     << groundCoefficients->values[3]);
 
         if (bool_groundTransformFrame_){
             extractor_->transformGroundPlane(tf_groundSourceToTarget_, groundCloud, groundCoefficients, pagslamIn, initialGuess);
@@ -232,10 +232,10 @@ namespace pagslam
             //     groundPlaneVisualization(pagslamIn.groundFeature.coefficients);
             // }
             
-            ROS_DEBUG_STREAM("After Tf Ground: " << pagslamIn.groundFeature.coefficients->values[0] << " "
-            << pagslamIn.groundFeature.coefficients->values[1] << " "
-            << pagslamIn.groundFeature.coefficients->values[2] << " "
-            << pagslamIn.groundFeature.coefficients->values[3]);
+            // ROS_DEBUG_STREAM("After Tf Ground: " << pagslamIn.groundFeature.coefficients->values[0] << " "
+            // << pagslamIn.groundFeature.coefficients->values[1] << " "
+            // << pagslamIn.groundFeature.coefficients->values[2] << " "
+            // << pagslamIn.groundFeature.coefficients->values[3]);
 
             // if (pagslamIn.groundFeature.coefficients->values[3] < 0 ||
             // abs(pagslamIn.groundFeature.coefficients->values[3]/pagslamIn.groundFeature.coefficients->values[2]) > 1){    // If the extracted ground plane is not accurate
@@ -547,11 +547,11 @@ namespace pagslam
         // }
 
         // Assuming 'poseEstimate' is of type Sophus::SE3d
-        std::cout << "poseEstimate (SE3):" << std::endl;
-        std::cout << "Rotation Matrix:" << std::endl;
-        std::cout << poseEstimate.rotationMatrix() << std::endl;
-        std::cout << "Translation Vector:" << std::endl;
-        std::cout << poseEstimate.translation().transpose() << std::endl;
+        // std::cout << "poseEstimate (SE3):" << std::endl;
+        // std::cout << "Rotation Matrix:" << std::endl;
+        // std::cout << poseEstimate.rotationMatrix() << std::endl;
+        // std::cout << "Translation Vector:" << std::endl;
+        // std::cout << poseEstimate.translation().transpose() << std::endl;
         
         ROS_DEBUG_STREAM("Entering Callback. Lidar data stamp: " << odom.stamp);
 
@@ -577,6 +577,7 @@ namespace pagslam
         }
 
         bool success = runPagslam(pagslamIn, pagslamOut);
+        // bool success = runPagslam(pagslamIn, pagslamOut, initialGuess);
 
         visualization_msgs::Marker plane_marker_out1 = groundPlaneVisualization(pagslamOut.ground, 1);
         pubGroundMarkerOut1_.publish(plane_marker_out1);
@@ -645,8 +646,8 @@ namespace pagslam
                 // visualization_msgs::MarkerArray viz_stalkVector = mapCloudVisualization(pagslamIn.mapStalkFeatures);
 
                 // Comment when it visualization is not required
-                // visualization_msgs::MarkerArray viz_stalkVector = mapCloudVisualization(semantic_map);
-                // pubMapCloudMarker_.publish(viz_stalkVector);
+                visualization_msgs::MarkerArray viz_stalkVector = mapCloudVisualization(semantic_map);
+                pubMapCloudMarker_.publish(viz_stalkVector);
 
                 // visualization_msgs::MarkerArray viz_mapTopCloud = mapTopCloudVisualization(semantic_map);
                 // pubMapTopPointMarker_.publish(viz_mapTopCloud);
@@ -801,19 +802,19 @@ namespace pagslam
             plane_marker.color.r = 0.0;
             plane_marker.color.g = 1.0;
             plane_marker.color.b = 0.0;
-            cout << "Before : " << normal << endl;
+            // cout << "Before : " << normal << endl;
         }
         else if (groundType == 1){
             plane_marker.color.r = 1.0;
             plane_marker.color.g = 0.0;
             plane_marker.color.b = 0.0;
-            cout << "After : " << normal << endl;
+            // cout << "After : " << normal << endl;
         }
         else if (groundType == 2){
             plane_marker.color.r = 0.0;
             plane_marker.color.g = 0.0;
             plane_marker.color.b = 1.0;
-            cout << "Prev : " << normal << endl;
+            // cout << "Prev : " << normal << endl;
         }
 
         return plane_marker;
@@ -1027,7 +1028,6 @@ namespace pagslam
 
             for (const auto& point : stalk->cloud.points) {
                 geometry_msgs::Point p;
-
                 p.x = point.x;
                 p.y = point.y;
                 p.z = point.z;
