@@ -56,12 +56,12 @@ namespace ext
       // TEST: 2024-08
       seedSearchRadius_(0.12),
       maxSeedZLimit_(0.5),
-      minSeedPts_(4),
+      minSeedPts_(10),
       nIterations_(10),
       minInliers_(30),      
-      toleranceR_(0.10),
-      min_z_addition_(0.10),
-      max_z_addition_(0.16),
+      toleranceR_(0.02),
+      min_z_addition_(0.15),
+      max_z_addition_(0.20),
       offsetSearchRadius_(0.04)
     {}
     
@@ -331,17 +331,17 @@ namespace ext
         tfm_groundCoefficients->values[2] = tfm_coeff_vec[2];
         tfm_groundCoefficients->values[3] = tfm_coeff_vec[3];
 
-        cout << "Before: Model coefficients: " << groundCoefficients->values[0] << " " 
-                                    << groundCoefficients->values[1] << " "
-                                    << groundCoefficients->values[2] << " " 
-                                    << groundCoefficients->values[3] << " " 
-                                    << -groundCoefficients->values[3]/groundCoefficients->values[2] << endl;
+        // cout << "Before: Model coefficients: " << groundCoefficients->values[0] << " " 
+        //                             << groundCoefficients->values[1] << " "
+        //                             << groundCoefficients->values[2] << " " 
+        //                             << groundCoefficients->values[3] << " " 
+        //                             << -groundCoefficients->values[3]/groundCoefficients->values[2] << endl;
         
-        cout << "After: Model coefficients: " << tfm_groundCoefficients->values[0] << " " 
-                                    << tfm_groundCoefficients->values[1] << " "
-                                    << tfm_groundCoefficients->values[2] << " " 
-                                    << tfm_groundCoefficients->values[3] << " " 
-                                    << -tfm_groundCoefficients->values[3]/tfm_groundCoefficients->values[2] << endl;
+        // cout << "After: Model coefficients: " << tfm_groundCoefficients->values[0] << " " 
+        //                             << tfm_groundCoefficients->values[1] << " "
+        //                             << tfm_groundCoefficients->values[2] << " " 
+        //                             << tfm_groundCoefficients->values[3] << " " 
+        //                             << -tfm_groundCoefficients->values[3]/tfm_groundCoefficients->values[2] << endl;
 
         tfm_groundCoefficients->header.seq = groundCloud->header.seq;
         tfm_groundCoefficients->header.stamp = groundCloud->header.stamp;
@@ -496,7 +496,6 @@ namespace ext
 
         // ROS_DEBUG_STREAM("MIN_MAX: " << ground_z_value << " " << minZLimit << " " << maxZLimit); 
         filterByZ(inCloud, filteredZInCloud, minZLimit, maxZLimit);
-        // cout << "FILTERED: " << filteredZInCloud->size() << endl;
         // printPointCloud(filteredZInCloud);
 
         // (1)-2 Find initial seed points (DBSCAN)
@@ -1398,8 +1397,6 @@ namespace ext
     //             //     }
     //             // }
     //         }
-
-    //         // cout << "^^^^^^^^^^^^^^^^^^^^^^^^^^" << endl;
     //     }
     //     seedClusterFiltering(seedClusters);
     // }

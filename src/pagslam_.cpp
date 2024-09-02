@@ -38,10 +38,10 @@ namespace pagslam
         // huberLossThresh_ = 1; // 0.1
 
         // TEST
-        stalkMatchThresh_ = 0.04;  // 0.12 // 0.3 
+        stalkMatchThresh_ = 0.08;  // 0.12 // 0.3 
         minStalkMatches_ = 2; //2;
         rangeGroundMatch_ = 3; // 4
-        AddNewStalkThreshDist_ = 0.06;
+        AddNewStalkThreshDist_ = 0.5*stalkMatchThresh_;
         maxNumIterations_ = 100;
         huberLossThresh_ = 1; // 0.1
     }
@@ -49,12 +49,13 @@ namespace pagslam
 
     void pagslam::projectFeatures(const SE3 &tf, GroundFeature &ground, std::vector<StalkFeature::Ptr> &stalks){
         projectGround(tf, ground);
-        bool firstStalk = false;
+        // bool firstStalk = false;
         for (auto &stalk : stalks){
-            projectStalk(tf, stalk, firstStalk);
-            if (firstStalk){
-                firstStalk == false;
-            }
+            // projectStalk(tf, stalk, firstStalk);
+            projectStalk(tf, stalk);
+            // if (firstStalk){
+            //     firstStalk == false;
+            // }
         }
     }
 
@@ -86,7 +87,8 @@ namespace pagslam
     }
 
 
-    void pagslam::projectStalk(const SE3 &tf, StalkFeature::Ptr &stalk, bool firstStalk){     
+    // void pagslam::projectStalk(const SE3 &tf, StalkFeature::Ptr &stalk, bool firstStalk){
+    void pagslam::projectStalk(const SE3 &tf, StalkFeature::Ptr &stalk){     
         stalk->root = (tf * stalk->root.cast<double>()).cast<float>();
         stalk->top = (tf * stalk->top.cast<double>()).cast<float>();
         stalk->centroid = (tf * stalk->centroid.cast<double>()).cast<float>();
@@ -277,7 +279,8 @@ namespace pagslam
         for (const auto &cf : currFeatures) {
             int m = 0;
             StalkFeature::Ptr cf_proj = std::make_shared<StalkFeature>(*cf);
-            projectStalk(tf, cf_proj, false);
+            // projectStalk(tf, cf_proj, false);
+            projectStalk(tf, cf_proj);
 
             Scalar bestDist = std::numeric_limits<Scalar>::max(); // Initialized to a very large value.
             StalkFeature::Ptr bestMapFeature = nullptr;
@@ -560,8 +563,8 @@ namespace pagslam
             problem.AddParameterBlock(params, 6);
             // setting z, roll and pitch as constant
             ceres::SubsetParameterization *subset_parameterization =
-                // new ceres::SubsetParameterization(6, {2, 3, 4});
-                new ceres::SubsetParameterization(6, {1, 2, 3, 4});
+                new ceres::SubsetParameterization(6, {2, 3, 4});
+                // new ceres::SubsetParameterization(6, {1, 2, 3, 4});
             problem.SetParameterization(params, subset_parameterization);
 
             for (auto stalkMatch : stalkMatches){
@@ -572,9 +575,9 @@ namespace pagslam
 
                 // cout << root << " " << direction << endl;
                 
-                // double weight = 1.0;
+                double weight = 1.0;
                 int n = 0;
-                double weight = 1e2/stalkMatch.sceneFeature->cloud.size();
+                // double weight = 1e2/stalkMatch.sceneFeature->cloud.size();
                 CloudT modelCloud = stalkMatch.modelFeature->cloud;
                 
                 // cout << "!!!: " << stalkMatch.sceneFeature->cloud.size() << endl;
@@ -616,7 +619,7 @@ namespace pagslam
             ceres::Solve(options, &problem, &summary);
             success = (summary.termination_type == 0);
 
-            // std::cout << summary.BriefReport() << "\n";
+            std::cout << summary.BriefReport() << "\n";
 
             // std::cout << summary.FullReport() << "\n" << endl;
             
@@ -628,8 +631,8 @@ namespace pagslam
             out[1] = params[1];
             out[2] = params[5];
 
-            // ROS_DEBUG_STREAM("XYYaw: Optimized After " << out[0] << " " << out[1] << " " << out[2]); 
-            cout << "**************XYYaw: Optimized After " << out[0] << " " << out[1] << " " << out[2] << "**************" << endl; 
+            ROS_DEBUG_STREAM("XYYaw: Optimized After " << out[0] << " " << out[1] << " " << out[2]); 
+            // cout << "**************XYYaw: Optimized After " << out[0] << " " << out[1] << " " << out[2] << "**************" << endl; 
         }
         else{
             out[0] = t[0];
@@ -670,9 +673,9 @@ namespace pagslam
         // Vector4 model_coeff (lastGroundFeature.coefficients->values[0], lastGroundFeature.coefficients->values[1], lastGroundFeature.coefficients->values[2], lastGroundFeature.coefficients->values[3]);
         Vector4 model_coeff (0.0, 0.0, 1.0, 0.0);
         
-        cout << "**************" << scene_coeff << endl;
-        if (abs(scene_coeff[2]) < 0.8){
-            cout << "**************" << endl;
+        // cout << "**************" << scene_coeff << endl;
+        if (abs(scene_coeff[2]) < 0.9){
+            // cout << "**************" << endl;
             success = false;
         }
 
@@ -783,20 +786,25 @@ namespace pagslam
             
         // For Dual LiDAR (Vertical/Horizontal LiDAR)
         // if (bool_dualLiDAR_){
-        if(success & (abs(params[2]) < 1.0)){
-        out[0] = params[2];
-        out[1] = params[3];
-        out[2] = params[4];
-        
-        ROS_DEBUG_STREAM("ZRollPitch: Optimized After " << out[0] << " " << out[1] << " " << out[2]); 
-        }
-        else{
-            out[0] = t[2];
-            out[1] = rpy[0];
-            out[2] = rpy[1];
+        if (success){
+            // if(success & (abs(params[2]) < 1.0)){
+            if((abs(params[2]) < 1.0)){
+                out[0] = params[2];
+                out[1] = params[3];
+                out[2] = params[4];
+            
+            ROS_DEBUG_STREAM("ZRollPitch: Optimized After " << out[0] << " " << out[1] << " " << out[2]); 
+            }
+            else{
+                out[0] = t[2];
+                out[1] = rpy[0];
+                out[2] = rpy[1];
 
-            ROS_DEBUG_STREAM("ZRollPitch: NOT Optimized After " << out[0] << " " << out[1] << " " << out[2]); 
+                ROS_DEBUG_STREAM("ZRollPitch: NOT Optimized After " << out[0] << " " << out[1] << " " << out[2]); 
+            }
         }
+            
+        
         // }
         // else{
         //     // For Single LiDAR (Vertical LiDAR)
@@ -823,9 +831,13 @@ namespace pagslam
             size_t bestKey = 0; 
             size_t key = 0;
 
+            // if (mapStalkFeatures){
+            //     std::cout << "*********" << mapStalkFeatures.size() << std::endl;
+            // }
+
             for (int j = 0; j < mapStalkFeatures.size(); ++j){
                 StalkFeature::Ptr mf = mapStalkFeatures[j];                
-                Scalar d = stalkDistance(cf->root, mf->root);
+                Scalar d = stalkDistance(cf->root, mf->root);               
                 
                 if (d < bestDist){
                     bestDist = d;
@@ -916,6 +928,8 @@ namespace pagslam
             }
             ROS_WARN("Run P-AgSLAM");
 
+            // cout << "1!!!!!!" << in.mapStalkFeatures.size() << " " << in_proj.mapStalkFeatures.size() << endl;
+
             // matching models
             ROS_DEBUG_STREAM("============== BEFORE OPT =================");
             std::vector<FeatureMatch<StalkFeature::Ptr>> stalkMatches = matchStalks(in_proj.poseEstimate, in_proj.stalkFeatures, in_proj.mapStalkFeatures, stalkMatchThresh_);
@@ -949,7 +963,7 @@ namespace pagslam
             //         n = n + 1;
             //     }
             // }
-            // cout << "!!!!!!!!!!!!!!!!!!!!!!!" << endl;
+            // cout << "2!!!!!!" << in.mapStalkFeatures.size() << " " << in_proj.mapStalkFeatures.size() << endl;
 
             projectFeatures(currPoseTf, in_final.groundFeature, in_final.stalkFeatures);
             // cout << "???????????????????????" << endl;
@@ -957,7 +971,11 @@ namespace pagslam
             //     projectStalk(currPoseTf, stalk);
             // }
 
+            // cout << "3!!!!!!" << in.mapStalkFeatures.size() << " " << in_proj.mapStalkFeatures.size() << endl;
+
             matchFeatures(in_final.stalkFeatures, in.mapStalkFeatures, matchIndices);
+
+            // cout << "4!!!!!!" << in.mapStalkFeatures.size() << " " << in_proj.mapStalkFeatures.size() << endl;
 
             prevGroundFeatures_.push_back(in_final.groundFeature);
 

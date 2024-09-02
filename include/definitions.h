@@ -198,48 +198,102 @@ struct XYYawLineCost {
         Eigen::Matrix<T, 3, 1> model_root{T(root[0]), T(root[1]), T(root[2])};
         Eigen::Matrix<T, 3, 1> model_direction{T(direction[0]), T(direction[1]), T(direction[2])};
 
-        // last point
-        // transform point using current solution
+        // Transform point using current solution
         Eigen::Matrix<T, 3, 1> last_point;
         T r_last_curr[3] = {params[3], params[4], params[5]};
         Eigen::Matrix<T, 3, 1> t_last_curr{params[0], params[1], params[2]};
 
-        // cout << "LAST POINT: " << last_point << endl;
         ceres::AngleAxisRotatePoint(r_last_curr, source_point.data(), last_point.data());
         last_point += t_last_curr;
 
-        // cout << "LAST POINT: " << static_cast<Eigen::Matrix<T, 3, 1>>(last_point) << endl;
-        // cout << "MODEL ROOT: " << *model_root.data() << " " << model_root << endl;
+        // // Accumulate the total distance between last_point and all points in modelCloud.
+        // T totalDistance = T(0); // Initialize with zero.
 
-        // // projected point onto cylinder
-        // Eigen::Matrix<T, 3, 1> projected_point =
-        //     model_root + ((last_point - model_root).dot(model_direction) / sqrt((model_direction.dot(model_direction)))) * model_direction;
-
-        // // cout << model_root << "%\n" << last_point << "%\n" << projected_point << endl;
-        // T Distance = (projected_point - last_point).norm();
-
-        // // residuals[0] = Distance * T(weight);
-        // residuals[0] = sqrt(Distance) * T(weight);
-
-        // std::cout << "!!!" << residuals[0] << std::endl;
-        // cout << m << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
+        // // for (const auto& pointInCloud : modelCloud.points) {
+        // Eigen::Matrix<T, 2, 1> cloud_point_2d{T(model_root[0]), T(model_root[1])};
+        // Eigen::Matrix<T, 2, 1> last_point_2d{last_point.x(), last_point.y()};
         
-        // Find the minimum distance between last_point and all the points in modelCloud.
-        T minDistance = std::numeric_limits<T>::max(); // Initialize with a very large value.
+        // // Calculate the 2D distance using only x and y components
+        // T distance = (cloud_point_2d - last_point_2d).norm();
+        // //     totalDistance += distance; // Sum all distances
+        // // }
+
+        // // Now totalDistance holds the sum of distances from last_point to all points in modelCloud.
+        // residuals[0] = distance * T(weight); // Scale the total distance by the weight.
+
+        // Accumulate the total distance between last_point and all points in modelCloud.
+        T totalDistance = T(0); // Initialize with zero.
 
         for (const auto& pointInCloud : modelCloud.points) {
-            Eigen::Matrix<T, 3, 1> cloud_point{T(pointInCloud.x), T(pointInCloud.y), T(pointInCloud.z)};
-            T distance = (cloud_point - last_point).norm();
-            if (distance < minDistance) {
-                minDistance = distance;
-            }
+            Eigen::Matrix<T, 2, 1> cloud_point_2d{T(pointInCloud.x), T(pointInCloud.y)};
+            Eigen::Matrix<T, 2, 1> last_point_2d{last_point.x(), last_point.y()};
+            
+            // Calculate the 2D distance using only x and y components
+            T distance = (cloud_point_2d - last_point_2d).norm();
+            totalDistance += distance; // Sum all distances
         }
 
-        // Now minDistance holds the minimum distance from last_point to the modelCloud.
-        residuals[0] = minDistance * T(weight); // Or any other function of minDistance as you need.
+        // Now totalDistance holds the sum of distances from last_point to all points in modelCloud.
+        residuals[0] = totalDistance * T(weight); // Scale the total distance by the weight.
+
 
         return true;
     }
+
+
+    // template <typename T>
+    // bool operator()(const T* const params, T* residuals) const {
+
+    //     // n: normal of cylinder (x,y,z)
+    //     Eigen::Matrix<T, 3, 1> source_point{T(point[0]), T(point[1]), T(point[2])};
+
+    //     Eigen::Matrix<T, 3, 1> model_root{T(root[0]), T(root[1]), T(root[2])};
+    //     Eigen::Matrix<T, 3, 1> model_direction{T(direction[0]), T(direction[1]), T(direction[2])};
+
+    //     // last point
+    //     // transform point using current solution
+    //     Eigen::Matrix<T, 3, 1> last_point;
+    //     T r_last_curr[3] = {params[3], params[4], params[5]};
+    //     Eigen::Matrix<T, 3, 1> t_last_curr{params[0], params[1], params[2]};
+
+    //     // cout << "LAST POINT: " << last_point << endl;
+    //     ceres::AngleAxisRotatePoint(r_last_curr, source_point.data(), last_point.data());
+    //     last_point += t_last_curr;
+
+    //     // std::cout << last_point << std::endl;
+
+    //     // cout << "LAST POINT: " << static_cast<Eigen::Matrix<T, 3, 1>>(last_point) << endl;
+    //     // cout << "MODEL ROOT: " << *model_root.data() << " " << model_root << endl;
+
+    //     // // projected point onto cylinder
+    //     // Eigen::Matrix<T, 3, 1> projected_point =
+    //     //     model_root + ((last_point - model_root).dot(model_direction) / sqrt((model_direction.dot(model_direction)))) * model_direction;
+
+    //     // // cout << model_root << "%\n" << last_point << "%\n" << projected_point << endl;
+    //     // T Distance = (projected_point - last_point).norm();
+
+    //     // // residuals[0] = Distance * T(weight);
+    //     // residuals[0] = sqrt(Distance) * T(weight);
+
+    //     // std::cout << "!!!" << residuals[0] << std::endl;
+    //     // cout << m << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~" << endl;
+        
+    //     // Find the minimum distance between last_point and all the points in modelCloud.
+    //     T minDistance = std::numeric_limits<T>::max(); // Initialize with a very large value.
+
+    //     for (const auto& pointInCloud : modelCloud.points) {
+    //         Eigen::Matrix<T, 3, 1> cloud_point{T(pointInCloud.x), T(pointInCloud.y), T(pointInCloud.z)};
+    //         T distance = (cloud_point - last_point).norm();
+    //         if (distance < minDistance) {
+    //             minDistance = distance;
+    //         }
+    //     }
+
+    //     // Now minDistance holds the minimum distance from last_point to the modelCloud.
+    //     residuals[0] = minDistance * T(weight); // Or any other function of minDistance as you need.
+
+    //     return true;
+    // }
 };
 
 struct ZRollPitchGroundCost {

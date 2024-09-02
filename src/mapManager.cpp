@@ -40,7 +40,9 @@ void MapManager::getSubmap(const SE3& pose, std::vector<StalkFeature::Ptr>& subm
     searchPoint.z = pose.translation()[2];
 
     // if(kdtree.nearestKSearch(searchPoint, 3, pointIdxKNNSearch, pointKNNSquaredDistance) > 0){
-    if(kdtree.nearestKSearch(searchPoint, 30, pointIdxKNNSearch, pointKNNSquaredDistance) > 0){
+    // if(kdtree.nearestKSearch(searchPoint, 30, pointIdxKNNSearch, pointKNNSquaredDistance) > 0){
+    // if(kdtree.nearestKSearch(searchPoint, 50, pointIdxKNNSearch, pointKNNSquaredDistance) > 0){
+    if(kdtree.nearestKSearch(searchPoint, 10, pointIdxKNNSearch, pointKNNSquaredDistance) > 0){
         int idx_count = 0;
         auto map_size = stalkModels_.size();
 

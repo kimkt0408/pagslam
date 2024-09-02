@@ -52,7 +52,9 @@ namespace pagslam
             visualization_msgs::MarkerArray trajectoryVisualization(const std::vector<SE3> &poses, const int pose_type);
             visualization_msgs::MarkerArray mapCloudVisualization(const std::vector<StalkFeature::Ptr> stalkVector);
             visualization_msgs::MarkerArray mapTopCloudVisualization(const std::vector<StalkFeature::Ptr> stalkVector);
-            // tf2::Transform SE3ToTransform(const SE3& se3);
+            
+            visualization_msgs::MarkerArray mapCloudVisualization2(const std::vector<StalkFeature::Ptr>& stalkVector, int type);
+            void projectStalk(const SE3 &tf, StalkFeature::Ptr &stalk);
 
         private:
             void initParams_();
@@ -80,6 +82,9 @@ namespace pagslam
             ros::Publisher pubMapCloudMarker_;
             ros::Publisher pubMapTopPointMarker_;
             ros::Publisher pubMapTotalCloud_;
+
+            ros::Publisher pubMapCloudMarkerBefore_;
+            ros::Publisher pubMapCloudMarkerAfter_;
 
             // Transform
             tf2_ros::Buffer tf_buffer_;

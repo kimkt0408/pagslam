@@ -80,7 +80,8 @@ namespace pagslam
             void projectFeatures(const SE3 &tf, GroundFeature &ground, std::vector<StalkFeature::Ptr> &stalks);
             void projectGround(const SE3 &tf, GroundFeature &ground);
             // void projectStalk(const SE3 &tf, StalkFeature::Ptr &stalk);
-            void projectStalk(const SE3 &tf, StalkFeature::Ptr &stalk, bool firstStalk);
+            // void projectStalk(const SE3 &tf, StalkFeature::Ptr &stalk, bool firstStalk);
+            void projectStalk(const SE3 &tf, StalkFeature::Ptr &stalk);
             void matchFeatures(const std::vector<StalkFeature::Ptr> &stalkFeatures, const std::vector<StalkFeature::Ptr> &mapStalkFeatures, std::vector<int> &matchIndices);
 
             bool TwoStepOptimizePose(const PagslamInput &in_proj, const bool stalkCheck, const std::vector<FeatureMatch<StalkFeature::Ptr>> &stalkMatches, SE3 &tf);

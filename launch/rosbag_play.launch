@@ -54,7 +54,7 @@
     <!-- <arg name="bagfile_abs_path"   value="/media/kimkt0408/T7/IoT4Ag/bagfiles/2023/2023-07-29-12-22-29.bag" /> -->
     <!-- <arg name="bagfile_abs_path"   value="/media/kimkt0408/T7/IoT4Ag/bagfiles/2023/loopCornfield_imu2_sim.bag" /> -->
     
-    <arg name="bagfile_abs_path"   value="/media/kimkt0408/T7\ Shield/IoT4Ag/bagfiles/2024-08-19-19-34-05.bag" />
+    <arg name="bagfile_abs_path"   value="/media/kimkt0408/T7\ Shield/IoT4Ag/bagfiles/2024-08-21-15-30-05.bag" />
     <!-- <arg name="bagfile_abs_path"   value="/home/kimkt0408/bagfiles/2024-07-08-09-27-20.bag" /> -->
     
     <!-- rosbag play -->

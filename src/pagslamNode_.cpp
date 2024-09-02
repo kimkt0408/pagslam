@@ -69,6 +69,8 @@ namespace pagslam
         pubMapTotalCloud_ = nh_.advertise<visualization_msgs::MarkerArray>("debug/map_total_cloud_", 1);
         pubMapTopPointMarker_ = nh_.advertise<visualization_msgs::MarkerArray>("debug/map_top_point_marker_", 1);
 
+        pubMapCloudMarkerBefore_ = nh_.advertise<visualization_msgs::MarkerArray>("debug/map_cloud_marker_before_", 1);
+        pubMapCloudMarkerAfter_ = nh_.advertise<visualization_msgs::MarkerArray>("debug/map_cloud_marker_after_", 1);
 
         firstScan_ = nh_.param("first_scan", true);
         bool_groundTransformFrame_ = nh_.param("bool_ground_transform_frame", false);
@@ -116,7 +118,7 @@ namespace pagslam
 
         // TEST: 2024-08
         ransacMaxIterations_ = nh_.param("ransac_max_iterations", 10);
-        eps_= nh_.param("dbscan_epsilon", 0.05); // 0.006
+        eps_= nh_.param("dbscan_epsilon", 0.05); // 0.05
         minDbscanPts_ = nh_.param("dbscan_min_num_points", 2); // 80
 
 
@@ -575,9 +577,27 @@ namespace pagslam
             visualization_msgs::Marker plane_marker_out2 = groundPlaneVisualization(prev_ground_, 2);
             pubGroundMarkerOut2_.publish(plane_marker_out2);
         }
+        
+        PagslamInput in_tmp(pagslamIn);
+
+        for (auto &cf : in_tmp.stalkFeatures){
+            // int m = 0;
+            // StalkFeature::Ptr cf_proj = std::make_shared<StalkFeature>(*cf);
+            // projectStalk(tf, cf_proj, false);
+
+            // cout << "??????????" << cf->root << endl;
+            projectStalk(in_tmp.poseEstimate, cf);
+            // cout << "!!!!!!!!!!" << cf->root << endl;
+        }
+
+        visualization_msgs::MarkerArray viz_stalkVector_before = mapCloudVisualization2(in_tmp.stalkFeatures, 0);
+        pubMapCloudMarkerBefore_.publish(viz_stalkVector_before);
 
         bool success = runPagslam(pagslamIn, pagslamOut);
         // bool success = runPagslam(pagslamIn, pagslamOut, initialGuess);
+
+        visualization_msgs::MarkerArray viz_stalkVector_after = mapCloudVisualization2(pagslamOut.stalks, 1);
+        pubMapCloudMarkerAfter_.publish(viz_stalkVector_after);
 
         visualization_msgs::Marker plane_marker_out1 = groundPlaneVisualization(pagslamOut.ground, 1);
         pubGroundMarkerOut1_.publish(plane_marker_out1);
@@ -643,10 +663,10 @@ namespace pagslam
                 // visualization_msgs::MarkerArray viz_mapTotalCloud = stalkCloudClustersVisualization(mapCloud_);
                 // pubMapTotalCloud_.publish(viz_mapTotalCloud);
 
-                // visualization_msgs::MarkerArray viz_stalkVector = mapCloudVisualization(pagslamIn.mapStalkFeatures);
+                visualization_msgs::MarkerArray viz_stalkVector = mapCloudVisualization(pagslamIn.mapStalkFeatures);
 
                 // Comment when it visualization is not required
-                visualization_msgs::MarkerArray viz_stalkVector = mapCloudVisualization(semantic_map);
+                // visualization_msgs::MarkerArray viz_stalkVector = mapCloudVisualization(semantic_map);
                 pubMapCloudMarker_.publish(viz_stalkVector);
 
                 // visualization_msgs::MarkerArray viz_mapTopCloud = mapTopCloudVisualization(semantic_map);
@@ -683,6 +703,27 @@ namespace pagslam
         // return success;
     }
 
+    void PAGSLAMNode::projectStalk(const SE3 &tf, StalkFeature::Ptr &stalk){     
+        stalk->root = (tf * stalk->root.cast<double>()).cast<float>();
+        stalk->top = (tf * stalk->top.cast<double>()).cast<float>();
+        stalk->centroid = (tf * stalk->centroid.cast<double>()).cast<float>();
+        stalk->direction = (stalk->centroid-stalk->root)/(stalk->centroid-stalk->root).norm();
+
+        for (auto& point : stalk->cloud.points){
+            Eigen::Vector3f pt (point.x, point.y, point.z);
+            // cout << "Before : " << point.x << " " << point.y << " " << point.z << endl;
+            pt = (tf * pt.cast<double>()).cast<float>();
+            
+            point.x = pt[0];
+            point.y = pt[1];
+            point.z = pt[2];
+
+            // if (firstStalk){
+            // cout << "After: " << point.x << " " << point.y << " " << point.z << endl;
+            // }
+            
+        }
+    }
 
     bool PAGSLAMNode::transformFrame(const std::string source_frame, const std::string target_frame, tf2::Transform& tf_sourceToTarget_)
     {
@@ -1034,6 +1075,74 @@ namespace pagslam
                 p.y = point.y;
                 p.z = point.z;
                 marker.points.push_back(p);
+            }
+
+            // Add the marker to the array
+            marker_array.markers.push_back(marker);
+        }
+        return marker_array;
+    }
+
+    visualization_msgs::MarkerArray PAGSLAMNode::mapCloudVisualization2(const std::vector<StalkFeature::Ptr>& stalkVector, int type)
+    {
+        visualization_msgs::MarkerArray marker_array;
+        // Loop over each point cloud and create a marker for it
+        int id = 0;
+
+        for (const auto& stalk : stalkVector){
+            float num_r;
+            float num_g;
+            float num_b;
+            
+            // Create a marker for the point cloud
+            visualization_msgs::Marker marker;
+
+            if (type == 0){
+                num_r = 1.0;
+                num_g = 0.0;
+                num_b = 0.0;
+
+                // marker.header.frame_id = map_frame_id_;
+            }
+            else if (type == 1){
+                num_r = 0.0;
+                num_g = 1.0;
+                num_b = 0.0;
+
+                // marker.header.frame_id = map_frame_id_;
+            }
+
+            // Create a marker for the point cloud
+            // visualization_msgs::Marker marker;
+            marker.header.frame_id = map_frame_id_;
+            
+            // ros::Time stamp = pcl_conversions::fromPCL(stalk->header).stamp;
+            // marker.header.stamp = stamp;
+            marker.header.stamp = ros::Time::now();
+
+
+            marker.id = id++;
+            marker.type = visualization_msgs::Marker::POINTS;
+            marker.action = visualization_msgs::Marker::ADD;
+            marker.ns = "point_cloud";
+            marker.scale.x = 0.02;
+            marker.scale.y = 0.02;
+            marker.scale.z = 0.02;
+            marker.color.a = 1.0;
+            marker.color.r = num_r;
+            marker.color.g = num_g;
+            marker.color.b = num_b;
+
+            for (const auto& point : stalk->cloud.points) {
+                geometry_msgs::Point p;
+                p.x = point.x;
+                p.y = point.y;
+                p.z = point.z;
+                marker.points.push_back(p);
+
+                // if (type == 0){
+                //     cout << p.x << " " << p.y << " " << p.z << endl;
+                // }
             }
 
             // Add the marker to the array
