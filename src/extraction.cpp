@@ -108,7 +108,6 @@ namespace ext
         sor.filter(*downsampledCloud);
         
         // Print the number of points in the downsampled cloud
-        
         pcl::PointIndices inliers;
         pcl::ModelCoefficients groundCoeffs;
         // Create the segmentation object
@@ -164,6 +163,72 @@ namespace ext
         ROS_WARN("No valid segmentation found in %d iterations", nIterations_);
     }
    
+    // Added downsampling function to reduce the computational latency of the system
+    void Extraction::rowRansac(const CloudT::Ptr inCloud, CloudT::Ptr& outCloud_inlier, CloudT::Ptr& outCloud_outlier, pcl::ModelCoefficients::Ptr& groundCoefficients)
+    {
+        // Downsample the input cloud to reduce the number of points
+        pcl::VoxelGrid<PointT> sor;
+        float leafSize = 0.01f; // Adjust this value based on the desired resolution
+        // float leafSize = 0.08f; // Adjust this value based on the desired resolution
+        sor.setInputCloud(inCloud);
+        sor.setLeafSize(leafSize, leafSize, leafSize); // Set the voxel size (leaf size)
+        CloudT::Ptr downsampledCloud(new CloudT);
+        sor.filter(*downsampledCloud);
+        
+        pcl::PointIndices inliers;
+        pcl::ModelCoefficients groundCoeffs;
+        // Create the segmentation object
+        pcl::SACSegmentation<PointT> seg;
+        // Optional
+        seg.setOptimizeCoefficients (true);
+        // Mandatory
+        seg.setModelType (pcl::SACMODEL_PLANE);
+        seg.setMethodType (pcl::SAC_RANSAC);
+        seg.setMaxIterations (ransacMaxIterations_);
+        seg.setInputCloud (downsampledCloud);
+
+        // Set the distance threshold only once
+        if (seg.getDistanceThreshold() != 0.06) {
+            seg.setDistanceThreshold (0.06);
+        }
+
+        #pragma omp parallel for
+        for (int i = 0; i < nIterations_; ++i)
+        {
+            // Perform segmentation
+            seg.segment (inliers, groundCoeffs);
+
+            // cout << "!!!!!!!!!" << inliers.indices.size() << endl;
+            // If enough inliers were found
+            if (inliers.indices.size () > minInliers_) {
+                // Extract the planar inliers from the input cloud
+                pcl::ExtractIndices<PointT> extract;
+                extract.setInputCloud(downsampledCloud);
+                extract.setIndices(boost::make_shared<pcl::PointIndices>(inliers));
+                extract.setNegative(false);
+                extract.filter(*outCloud_inlier);
+
+                extract.setNegative(true);
+                extract.filter(*outCloud_outlier);
+
+                // Update the ground coefficients
+                groundCoefficients = boost::make_shared<pcl::ModelCoefficients>(groundCoeffs);
+
+                // cout << "Model coefficients: " << groundCoefficients->values[0] << " " 
+                //                     << groundCoefficients->values[1] << " "
+                //                     << groundCoefficients->values[2] << " " 
+                //                     << groundCoefficients->values[3] << endl;
+
+                return;
+            }
+        }
+
+        // No valid segmentation found
+        outCloud_inlier->clear();
+        outCloud_outlier = downsampledCloud;
+        groundCoefficients.reset(new pcl::ModelCoefficients);
+        ROS_WARN("No valid segmentation found in %d iterations", nIterations_);
+    }
 
     // void Extraction::ransac(const CloudT::Ptr inCloud, CloudT::Ptr& outCloud_inlier, CloudT::Ptr& outCloud_outlier, pcl::ModelCoefficients::Ptr& groundCoefficients)
     // {

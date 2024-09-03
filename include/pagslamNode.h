@@ -14,6 +14,15 @@
 #include <pcl_ros/point_cloud.h>
 #include <pcl_ros/transforms.h>
 
+#include <pcl/point_types.h>
+#include <pcl/io/pcd_io.h>
+#include <pcl/filters/voxel_grid.h>
+#include <pcl/filters/statistical_outlier_removal.h>
+#include <pcl/kdtree/kdtree.h>
+#include <pcl/segmentation/extract_clusters.h>
+#include <map>
+#include <vector>
+
 // Others
 #include <definitions.h>
 #include <pagslam.h>
@@ -37,9 +46,14 @@ namespace pagslam
             // bool groundExtraction(CloudT::Ptr& h_cloud, PagslamInput& pagslamIn);
             // bool groundExtraction(CloudT::Ptr& v_cloud, PagslamInput& pagslamIn);
             bool groundExtraction(CloudT::Ptr& h_cloud, PagslamInput& pagslamIn, const SE3 initialGuess);
-            
+            bool rowExtraction(CloudT::Ptr& h_cloud, PagslamInput& pagslamIn, const SE3 initialGuess);  
             bool stalkExtraction(CloudT::Ptr& v_cloud, PagslamInput& pagslamIn);
             
+            visualization_msgs::Marker visualizeHistogramInRviz(const std::map<int, int>& histogram, float binWidth, float minY);
+            float computeYAxisDensityHistogram(const CloudT::Ptr& cloud, std::map<int, int>& histogram, float binWidth);
+            std::vector<int> extractLocalMaxima(const std::map<int, int>& histogram);
+            void splitPointCloudByDensity(const CloudT::Ptr inCloud, std::vector<CloudT::Ptr>& cloudSegments, float binWidth, int minDensity);
+    
             // bool run(const SE3 initialGuess, const SE3 prevKeyPose, CloudT::Ptr h_cloud, CloudT::Ptr v_cloud, ros::Time stamp, SE3 &outPose);
             // bool run(const SE3 initialGuess, const SE3 prevKeyPose, CloudT::Ptr CloudT::Ptr v_cloud, StampedSE3 odom, SE3 &outPose);
             bool run(const SE3 initialGuess, const SE3 prevKeyPose, CloudT::Ptr h_cloud, CloudT::Ptr v_cloud, StampedSE3 odom, SE3 &outPose);
@@ -86,10 +100,13 @@ namespace pagslam
             ros::Publisher pubMapCloudMarkerBefore_;
             ros::Publisher pubMapCloudMarkerAfter_;
 
+            ros::Publisher pubYAxisHistogram_;
+
             // Transform
             tf2_ros::Buffer tf_buffer_;
             std::unique_ptr<tf2_ros::TransformListener> tf_listener_;
             tf2::Transform tf_groundSourceToTarget_;
+            tf2::Transform tf_rowSourceToTarget_;
             tf2::Transform tf_stalkSourceToTarget_;
 
             // Submodule objects
@@ -103,6 +120,7 @@ namespace pagslam
             bool firstScan_;
             bool debugMode_;
             bool bool_groundTransformFrame_;
+            bool bool_rowTransformFrame_;
             bool bool_stalkTransformFrame_;
             bool bool_stalkCloud_;
             bool bool_stalkCloudClusters_;
@@ -110,6 +128,7 @@ namespace pagslam
 
 
             bool bool_ground_;
+            bool bool_row_;
             bool bool_stalk_;
 
             std::string map_frame_id_;
