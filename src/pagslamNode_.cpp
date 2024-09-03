@@ -51,10 +51,16 @@ namespace pagslam
         pubHCloud_ = nh_.advertise<CloudT>("debug/h_cloud_", 1);
         pubVCloud_ = nh_.advertise<CloudT>("debug/v_cloud_", 1);
 
+        pubRow1Cloud_ = nh_.advertise<CloudT>("debug/row_cloud1_", 1);
+        pubRow2Cloud_ = nh_.advertise<CloudT>("debug/row_cloud2_", 1);
+
         // pubGroundMarker_ = nh_.advertise<visualization_msgs::MarkerArray>("debug/ground_marker_", 1);
         pubGroundMarkerIn_ = nh_.advertise<visualization_msgs::Marker>("debug/ground_marker_in_", 1);
         pubGroundMarkerOut1_ = nh_.advertise<visualization_msgs::Marker>("debug/ground_marker_out1_", 1);
         pubGroundMarkerOut2_ = nh_.advertise<visualization_msgs::Marker>("debug/ground_marker_out2_", 1);
+
+        pubRow1MarkerIn_ = nh_.advertise<visualization_msgs::Marker>("debug/row_marker_in1_", 1);
+        pubRow2MarkerIn_ = nh_.advertise<visualization_msgs::Marker>("debug/row_marker_in2_", 1);
         
         pubStalkCloudClustersMarker_ = nh_.advertise<visualization_msgs::MarkerArray>("debug/stalk_cloud_clusters_marker_", 1);
         pubStalkSeedClustersMarker_ = nh_.advertise<visualization_msgs::MarkerArray>("debug/stalk_seed_clusters_marker_", 1);
@@ -72,7 +78,7 @@ namespace pagslam
         pubMapCloudMarkerBefore_ = nh_.advertise<visualization_msgs::MarkerArray>("debug/map_cloud_marker_before_", 1);
         pubMapCloudMarkerAfter_ = nh_.advertise<visualization_msgs::MarkerArray>("debug/map_cloud_marker_after_", 1);
 
-        pubYAxisHistogram_ = nh_.advertise<visualization_msgs::Marker>("y_axis_histogram", 1);
+        pubYAxisHistogram_ = nh_.advertise<visualization_msgs::Marker>("debug/y_axis_histogram", 1);
         
         firstScan_ = nh_.param("first_scan", true);
         bool_groundTransformFrame_ = nh_.param("bool_ground_transform_frame", false);
@@ -669,76 +675,336 @@ namespace pagslam
     //     return true;
     // }
 
+    // // (3) For a single LiDAR (horizontal LiDAR)
+    // bool PAGSLAMNode::rowExtraction(CloudT::Ptr& h_cloud, std::vector<std::array<float, 2>> twoRowsYRange, PagslamInput& pagslamIn, const SE3 initialGuess)
+    // {
+    //     // Downsample the input cloud to reduce the number of points
+    //     pcl::VoxelGrid<PointT> sor;
+    //     float leafSize = 0.01f; // Adjust this value based on the desired resolution
+    //     // float leafSize = 0.08f; // Adjust this value based on the desired resolution
+    //     sor.setInputCloud(h_cloud);
+    //     sor.setLeafSize(leafSize, leafSize, leafSize); // Set the voxel size (leaf size)
+    //     CloudT::Ptr downsampledCloud(new CloudT);
+    //     sor.filter(*downsampledCloud);
+
+    //     CloudT::Ptr rowCloud1(new CloudT());
+    //     CloudT::Ptr rowCloud1_outlier(new CloudT());
+    //     pcl::ModelCoefficients::Ptr rowCoefficients1 (new pcl::ModelCoefficients);
+    //     CloudT::Ptr rowCloud2(new CloudT());
+    //     CloudT::Ptr rowCloud2_outlier(new CloudT());
+    //     pcl::ModelCoefficients::Ptr rowCoefficients2 (new pcl::ModelCoefficients);
+        
+    //     // CloudT::Ptr h_cloud1(new CloudT);  // Initialize h_cloud1 as a new point cloud
+    //     // pcl::copyPointCloud(*downsampledCloud, *h_cloud1);  // Copy the points from h_cloud to h_cloud1
+    //     // CloudT::Ptr h_cloud2(new CloudT);  // Initialize h_cloud1 as a new point cloud
+    //     // pcl::copyPointCloud(*downsampledCloud, *h_cloud2);  // Copy the points from h_cloud to h_cloud1
+    //     CloudT::Ptr h_cloud_tmp(new CloudT);  // Initialize h_cloud1 as a new point cloud
+    //     pcl::copyPointCloud(*downsampledCloud, *h_cloud_tmp);  // Copy the points from h_cloud to h_cloud1
+
+    //     // ******** (1) Ground plane *********        
+    //     // Filter the point cloud to use points with negative z-values
+    //     pcl::PassThrough<PointT> pass;
+    //     pass.setInputCloud(h_cloud_tmp);
+    //     pass.setFilterFieldName("y");
+
+    //     if (twoRowsYRange[0][1] < twoRowsYRange[1][0]){
+    //         pass.setFilterLimits(twoRowsYRange[0][0], twoRowsYRange[1][1]);  // Set the filter limits for negative z-values
+    //     }
+    //     else{
+    //         pass.setFilterLimits(twoRowsYRange[1][0], twoRowsYRange[0][1]);  // Set the filter limits for negative z-values
+    //     }
+    //     // pass.setFilterLimits(twoRowsYRange[0][0], twoRowsYRange[0][1]);  // Set the filter limits for negative z-values
+    //     pass.filter(*h_cloud_tmp);
+    //     pubRow1Cloud_.publish(h_cloud_tmp);
+
+    //     // Setup for DBSCAN clustering
+    //     pcl::search::KdTree<PointT>::Ptr tree(new pcl::search::KdTree<PointT>);
+    //     tree->setInputCloud(h_cloud_tmp);
+
+    //     std::vector<pcl::PointIndices> clusterIndices;
+    //     pcl::EuclideanClusterExtraction<PointT> ec;
+    //     ec.setClusterTolerance(0.1); // Set the tolerance to the desired cluster distance (adjust based on your environment)
+    //     ec.setMinClusterSize(200);   // Minimum number of points that constitute a valid cluster (adjust based on your data)
+    //     ec.setMaxClusterSize(25000); // Maximum number of points in a cluster (adjust based on your data)
+    //     ec.setSearchMethod(tree);
+    //     ec.setInputCloud(h_cloud_tmp);
+    //     ec.extract(clusterIndices);
+        
+    //     // Initialize containers for clusters
+    //     CloudT::Ptr h_cloud1(new CloudT());
+    //     CloudT::Ptr h_cloud2(new CloudT());
+
+    //     // Count the number of clusters
+    //     int numberOfClusters = clusterIndices.size();
+    //     std::cout << "Number of clusters detected: " << numberOfClusters << std::endl;
+
+    //     // Process the clusters
+    //     int clusterIdx = 0;
+    //     for (const auto& indices : clusterIndices) {
+    //         CloudT::Ptr cluster(new CloudT);
+    //         pcl::copyPointCloud(*h_cloud_tmp, indices, *cluster);
+
+    //         // For simplicity, let's assume we are looking for the first two clusters only
+    //         if (clusterIdx == 0) {
+    //             *h_cloud1 += *cluster;
+    //         } else if (clusterIdx == 1) {
+    //             *h_cloud2 += *cluster;
+    //         } else {
+    //             break; // Only process the first two clusters for now
+    //         }
+    //         clusterIdx++;
+    //     }
+
+    //     // If not enough clusters were found, return false
+    //     if (clusterIdx < 2) {
+    //         ROS_WARN("Not enough clusters found to represent two rows.");
+    //         return false;
+    //     }
+
+    //     // // Store the Y ranges of each row in twoRowsYRange for future use
+    //     // if (h_cloud1->points.size() > 0) {
+    //     //     float minY1 = h_cloud1->points[0].y;
+    //     //     float maxY1 = h_cloud1->points[0].y;
+    //     //     for (const auto& point : h_cloud1->points) {
+    //     //         if (point.y < minY1) minY1 = point.y;
+    //     //         if (point.y > maxY1) maxY1 = point.y;
+    //     //     }
+    //     //     twoRowsYRange.push_back({minY1, maxY1});
+    //     // }
+
+    //     // if (h_cloud2->points.size() > 0) {
+    //     //     float minY2 = h_cloud2->points[0].y;
+    //     //     float maxY2 = h_cloud2->points[0].y;
+    //     //     for (const auto& point : h_cloud2->points) {
+    //     //         if (point.y < minY2) minY2 = point.y;
+    //     //         if (point.y > maxY2) maxY2 = point.y;
+    //     //     }
+    //     //     twoRowsYRange.push_back({minY2, maxY2});
+    //     // }
+
+    //     // Set the header and timestamp correctly
+    //     h_cloud1->header.frame_id = h_lidar_frame_id_;
+    //     // h_cloud1->header.stamp = ros::Time::now().toNSec();  // Convert ROS time to nanoseconds
+    //     h_cloud2->header.frame_id = h_lidar_frame_id_;
+    //     // h_cloud2->header.stamp = ros::Time::now().toNSec();  // Convert ROS time to nanoseconds
+
+
+    //     // Publish row clouds for visualization
+    //     // pubRow1Cloud_.publish(h_cloud1);
+    //     pubRow2Cloud_.publish(h_cloud2);
+
+
+    //     // extractor_->ransac(h_cloud, rowCloud, rowCloud_outlier, rowCoefficients);
+    //     extractor_->rowRansac(h_cloud1, rowCloud1, rowCloud1_outlier, rowCoefficients1);
+        
+    //     ROS_DEBUG_STREAM("Before Tf Row1: " << rowCoefficients1->values[0] << " "
+    //         << rowCoefficients1->values[1] << " "
+    //         << rowCoefficients1->values[2] << " "
+    //         << rowCoefficients1->values[3]);
+
+    //     extractor_->rowRansac(h_cloud2, rowCloud2, rowCloud2_outlier, rowCoefficients2);
+        
+    //     ROS_DEBUG_STREAM("Before Tf Row2: " << rowCoefficients2->values[0] << " "
+    //         << rowCoefficients2->values[1] << " "
+    //         << rowCoefficients2->values[2] << " "
+    //         << rowCoefficients2->values[3]);
+
+        
+
+
+    //     visualization_msgs::Marker row1_plane = rowPlaneVisualization(rowCoefficients1, 0);        
+    //     pubRow1MarkerIn_.publish(row1_plane);
+
+    //     visualization_msgs::Marker row2_plane = rowPlaneVisualization(rowCoefficients2, 0);        
+    //     pubRow2MarkerIn_.publish(row2_plane);
+
+    //     // Transform the point cloud and model coefficients to robot_frame
+    //     bool_rowTransformFrame_ = transformFrame(h_lidar_frame_id_, robot_frame_id_, tf_rowSourceToTarget_);
+    //     // bool_groundTransformFrame_ = transformFrame(robot_frame_id_, v_lidar_frame_id_, tf_groundSourceToTarget_);
+        
+        
+
+    //     if (bool_rowTransformFrame_){
+    //         // extractor_->transformGroundPlane(tf_rowSourceToTarget_, rowCloud, rowCoefficients, pagslamIn, initialGuess);
+
+    //         // // if (debugMode_){   
+    //         // //     pubGroundCloud_.publish(pagslamIn.groundFeature.cloud);
+    //         // //     groundPlaneVisualization(pagslamIn.groundFeature.coefficients);
+    //         // // }
+            
+    //         // // ROS_DEBUG_STREAM("After Tf Ground: " << pagslamIn.groundFeature.coefficients->values[0] << " "
+    //         // // << pagslamIn.groundFeature.coefficients->values[1] << " "
+    //         // // << pagslamIn.groundFeature.coefficients->values[2] << " "
+    //         // // << pagslamIn.groundFeature.coefficients->values[3]);
+
+    //         // // if (pagslamIn.groundFeature.coefficients->values[3] < 0 ||
+    //         // // abs(pagslamIn.groundFeature.coefficients->values[3]/pagslamIn.groundFeature.coefficients->values[2]) > 1){    // If the extracted ground plane is not accurate
+    //         // //     return false;
+    //         // // }      
+
+    //         // if (abs(pagslamIn.groundFeature.coefficients->values[3]/pagslamIn.groundFeature.coefficients->values[2]) > 1){    // If the extracted ground plane is not accurate
+    //         //     return false;
+    //         // }         
+    //     }
+    //     else{
+    //         return false;
+    //     }
+
+    //     // if (debugMode_){   
+    //     //     pubGroundCloud_.publish(pagslamIn.groundFeature.cloud);
+            
+    //     //     // visualization_msgs::Marker plane_marker_in = groundPlaneVisualization(pagslamIn.groundFeature, 0);
+    //     //     // pubGroundMarkerIn_.publish(plane_marker_in);
+    //     // }
+    //     // if (debugMode_){   
+    //     //     pubHCloud_.publish(h_cloud);
+    //     // }
+
+    //     // // Add visualization marker
+    //     // visualization_msgs::Marker plane_marker;
+    //     // plane_marker.header.frame_id = robot_frame_id_;  // Replace with your frame
+    //     // plane_marker.header.stamp = ros::Time::now();
+    //     // plane_marker.ns = "ground_plane";
+    //     // plane_marker.id = 0;
+    //     // plane_marker.type = visualization_msgs::Marker::CUBE;
+    //     // plane_marker.action = visualization_msgs::Marker::ADD;
+
+    //     // // Calculate the normal and centroid of the plane
+    //     // Eigen::Vector3f normal(pagslamIn.groundFeature.coefficients->values[0],
+    //     //                        pagslamIn.groundFeature.coefficients->values[1],
+    //     //                        pagslamIn.groundFeature.coefficients->values[2]);
+
+    //     // float d = pagslamIn.groundFeature.coefficients->values[3];
+    //     // Eigen::Vector3f centroid(0, 0, -d / normal.norm());
+
+    //     // plane_marker.pose.position.x = centroid.x();
+    //     // plane_marker.pose.position.y = centroid.y();
+    //     // plane_marker.pose.position.z = centroid.z();
+
+    //     // // Calculate the orientation from the normal vector
+    //     // Eigen::Quaternionf q;
+    //     // q.setFromTwoVectors(Eigen::Vector3f(0, 0, 1), normal.normalized());
+    //     // plane_marker.pose.orientation.x = q.x();
+    //     // plane_marker.pose.orientation.y = q.y();
+    //     // plane_marker.pose.orientation.z = q.z();
+    //     // plane_marker.pose.orientation.w = q.w();
+
+    //     // // Set the size of the plane
+    //     // plane_marker.scale.x = 10.0;
+    //     // plane_marker.scale.y = 10.0;
+    //     // plane_marker.scale.z = 0.01;  // Thickness of the plane
+
+    //     // // Set the color and transparency
+    //     // plane_marker.color.a = 0.5;  // Transparency
+    //     // plane_marker.color.r = 0.0;
+    //     // plane_marker.color.g = 1.0;
+    //     // plane_marker.color.b = 0.0;
+
+    //     // // Publish the marker
+    //     // pubGroundMarker_.publish(plane_marker);
+
+    //     return true;
+    // }
+
     // (3) For a single LiDAR (horizontal LiDAR)
-    bool PAGSLAMNode::rowExtraction(CloudT::Ptr& h_cloud, PagslamInput& pagslamIn, const SE3 initialGuess)
+    bool PAGSLAMNode::rowExtraction(CloudT::Ptr& h_cloud, std::vector<std::array<float, 2>> twoRowsYRange, PagslamInput& pagslamIn, const SE3 initialGuess)
     {
-        CloudT::Ptr rowCloud(new CloudT());
-        CloudT::Ptr rowCloud_outlier(new CloudT());
-        pcl::ModelCoefficients::Ptr rowCoefficients (new pcl::ModelCoefficients);
-               
+        // Downsample the input cloud to reduce the number of points
+        pcl::VoxelGrid<PointT> sor;
+        float leafSize = 0.02f; // Adjust this value based on the desired resolution
+        // float leafSize = 0.08f; // Adjust this value based on the desired resolution
+        sor.setInputCloud(h_cloud);
+        sor.setLeafSize(leafSize, leafSize, leafSize); // Set the voxel size (leaf size)
+        CloudT::Ptr downsampledCloud(new CloudT);
+        sor.filter(*downsampledCloud);
+
+        CloudT::Ptr rowCloud1(new CloudT());
+        CloudT::Ptr rowCloud1_outlier(new CloudT());
+        pcl::ModelCoefficients::Ptr rowCoefficients1 (new pcl::ModelCoefficients);
+        CloudT::Ptr rowCloud2(new CloudT());
+        CloudT::Ptr rowCloud2_outlier(new CloudT());
+        pcl::ModelCoefficients::Ptr rowCoefficients2 (new pcl::ModelCoefficients);
+        
+        CloudT::Ptr h_cloud1(new CloudT);  // Initialize h_cloud1 as a new point cloud
+        pcl::copyPointCloud(*h_cloud, *h_cloud1);  // Copy the points from h_cloud to h_cloud1
+        CloudT::Ptr h_cloud2(new CloudT);  // Initialize h_cloud1 as a new point cloud
+        pcl::copyPointCloud(*h_cloud, *h_cloud2);  // Copy the points from h_cloud to h_cloud1
+
         // ******** (1) Ground plane *********        
         // Filter the point cloud to use points with negative z-values
-        pcl::PassThrough<PointT> pass;
-        pass.setInputCloud(h_cloud);
-        // pass.setFilterFieldName("y");
-        pass.setFilterFieldName("z");
-        // (1) SIM
-        // pass.setFilterLimits(-1.0, -0.2);  // Set the filter limits for negative z-values
-        // pass.setFilterLimits(-1.0, -0.5);  // Set the filter limits for negative z-values
-        
-        // (2) ACRE
-        // pass.setFilterLimits(0.3, 0.5);  // Set the filter limits for positive y-values
-        // pass.setFilterLimits(0.3, 0.8);  // Set the filter limits for positive y-values
-        pass.setFilterLimits(-0.5, 1.5);  // Set the filter limits for negative z-values
-        
-        // pass.setFilterLimitsNegative(false);  // Keep points inside the limits
-        pass.filter(*h_cloud);
+        pcl::PassThrough<PointT> pass1;
+        pass1.setInputCloud(h_cloud1);
+        pass1.setFilterFieldName("y");
+        pass1.setFilterLimits(twoRowsYRange[0][0], twoRowsYRange[0][1]);  // Set the filter limits for negative z-values
+        pass1.filter(*h_cloud1);
+        pubRow1Cloud_.publish(h_cloud1);
 
+        pcl::PassThrough<PointT> pass2;
+        pass2.setInputCloud(h_cloud2);
+        pass2.setFilterFieldName("y");
+        pass2.setFilterLimits(twoRowsYRange[1][0], twoRowsYRange[1][1]);  // Set the filter limits for negative z-values
+        pass2.filter(*h_cloud2);
+        pubRow2Cloud_.publish(h_cloud2);
 
         // extractor_->ransac(h_cloud, rowCloud, rowCloud_outlier, rowCoefficients);
-        extractor_->rowRansac(h_cloud, rowCloud, rowCloud_outlier, rowCoefficients);
+        extractor_->rowRansac(h_cloud1, rowCloud1, rowCloud1_outlier, rowCoefficients1);
         
+        ROS_DEBUG_STREAM("Before Tf Row1: " << rowCoefficients1->values[0] << " "
+            << rowCoefficients1->values[1] << " "
+            << rowCoefficients1->values[2] << " "
+            << rowCoefficients1->values[3]);
+
+        extractor_->rowRansac(h_cloud2, rowCloud2, rowCloud2_outlier, rowCoefficients2);
+        
+        ROS_DEBUG_STREAM("Before Tf Row2: " << rowCoefficients2->values[0] << " "
+            << rowCoefficients2->values[1] << " "
+            << rowCoefficients2->values[2] << " "
+            << rowCoefficients2->values[3]);
+
+        visualization_msgs::Marker row1_plane = rowPlaneVisualization(rowCoefficients1, 0);        
+        pubRow1MarkerIn_.publish(row1_plane);
+
+        visualization_msgs::Marker row2_plane = rowPlaneVisualization(rowCoefficients2, 0);        
+        pubRow2MarkerIn_.publish(row2_plane);
+
         // Transform the point cloud and model coefficients to robot_frame
         bool_rowTransformFrame_ = transformFrame(h_lidar_frame_id_, robot_frame_id_, tf_rowSourceToTarget_);
         // bool_groundTransformFrame_ = transformFrame(robot_frame_id_, v_lidar_frame_id_, tf_groundSourceToTarget_);
         
-        // ROS_DEBUG_STREAM("Before Tf Ground: " << groundCoefficients->values[0] << " "
-        //     << groundCoefficients->values[1] << " "
-        //     << groundCoefficients->values[2] << " "
-        //     << groundCoefficients->values[3]);
+        
 
         if (bool_rowTransformFrame_){
-            extractor_->transformGroundPlane(tf_rowSourceToTarget_, rowCloud, rowCoefficients, pagslamIn, initialGuess);
+            // extractor_->transformGroundPlane(tf_rowSourceToTarget_, rowCloud, rowCoefficients, pagslamIn, initialGuess);
 
-            // if (debugMode_){   
-            //     pubGroundCloud_.publish(pagslamIn.groundFeature.cloud);
-            //     groundPlaneVisualization(pagslamIn.groundFeature.coefficients);
-            // }
+            // // if (debugMode_){   
+            // //     pubGroundCloud_.publish(pagslamIn.groundFeature.cloud);
+            // //     groundPlaneVisualization(pagslamIn.groundFeature.coefficients);
+            // // }
             
-            // ROS_DEBUG_STREAM("After Tf Ground: " << pagslamIn.groundFeature.coefficients->values[0] << " "
-            // << pagslamIn.groundFeature.coefficients->values[1] << " "
-            // << pagslamIn.groundFeature.coefficients->values[2] << " "
-            // << pagslamIn.groundFeature.coefficients->values[3]);
+            // // ROS_DEBUG_STREAM("After Tf Ground: " << pagslamIn.groundFeature.coefficients->values[0] << " "
+            // // << pagslamIn.groundFeature.coefficients->values[1] << " "
+            // // << pagslamIn.groundFeature.coefficients->values[2] << " "
+            // // << pagslamIn.groundFeature.coefficients->values[3]);
 
-            // if (pagslamIn.groundFeature.coefficients->values[3] < 0 ||
-            // abs(pagslamIn.groundFeature.coefficients->values[3]/pagslamIn.groundFeature.coefficients->values[2]) > 1){    // If the extracted ground plane is not accurate
+            // // if (pagslamIn.groundFeature.coefficients->values[3] < 0 ||
+            // // abs(pagslamIn.groundFeature.coefficients->values[3]/pagslamIn.groundFeature.coefficients->values[2]) > 1){    // If the extracted ground plane is not accurate
+            // //     return false;
+            // // }      
+
+            // if (abs(pagslamIn.groundFeature.coefficients->values[3]/pagslamIn.groundFeature.coefficients->values[2]) > 1){    // If the extracted ground plane is not accurate
             //     return false;
-            // }      
-
-            if (abs(pagslamIn.groundFeature.coefficients->values[3]/pagslamIn.groundFeature.coefficients->values[2]) > 1){    // If the extracted ground plane is not accurate
-                return false;
-            }         
+            // }         
         }
         else{
             return false;
         }
 
-        if (debugMode_){   
-            pubGroundCloud_.publish(pagslamIn.groundFeature.cloud);
+        // if (debugMode_){   
+        //     pubGroundCloud_.publish(pagslamIn.groundFeature.cloud);
             
-            // visualization_msgs::Marker plane_marker_in = groundPlaneVisualization(pagslamIn.groundFeature, 0);
-            // pubGroundMarkerIn_.publish(plane_marker_in);
-        }
+        //     // visualization_msgs::Marker plane_marker_in = groundPlaneVisualization(pagslamIn.groundFeature, 0);
+        //     // pubGroundMarkerIn_.publish(plane_marker_in);
+        // }
         // if (debugMode_){   
         //     pubHCloud_.publish(h_cloud);
         // }
@@ -805,7 +1071,7 @@ namespace pagslam
         CloudT::Ptr downsampledCloud(new CloudT);
         sor.filter(*downsampledCloud);
         
-        pubHCloud_.publish(downsampledCloud);
+        // pubHCloud_.publish(downsampledCloud);
 
         // Initialize the histogram map
         histogram.clear();
@@ -827,39 +1093,50 @@ namespace pagslam
         return minY;
     }
 
-    std::vector<int> PAGSLAMNode::extractLocalMaxima(const std::map<int, int>& histogram) {
-        std::vector<int> localMaxima;
+    // Function to detect local maxima from the histogram
+    std::vector<std::pair<int, int>> PAGSLAMNode::extractLocalMaxima(const std::map<int, int>& histogram) {
+        std::vector<std::pair<int, int>> localMaxima; // Store pairs of (bin index, count)
 
         // Ensure the histogram has enough bins to compare
         if (histogram.size() < 3) {
             return localMaxima;  // Not enough bins to have local maxima
         }
 
-        // auto it = histogram.begin();
-        // auto prev_it = it++;
-        // auto next_it = ++it;
-
+        // Initialize iterators properly
         auto prev_it = histogram.begin();  // First element
         auto it = prev_it;                 // Start from the first element
         ++it;                              // Move to the second element
         auto next_it = it;                 // Start from the second element
         ++next_it;                         // Move to the third element
 
-
         while (next_it != histogram.end()) {
-            // cout << " 1 " << prev_it->second << " 2 " << it->second << " 3 " << next_it->second << endl;
             if (prev_it->second < it->second && it->second > next_it->second) {
-                cout << "!!!!!" << endl;
-                // Local maximum found
-                localMaxima.push_back(it->first);
+                // Local maximum found, store the (bin index, count) pair
+                localMaxima.emplace_back(it->first, it->second);
             }
             ++prev_it;
             ++it;
             ++next_it;
         }
 
+        // Sort the local maxima by count in descending order
+        std::sort(localMaxima.begin(), localMaxima.end(), [](const std::pair<int, int>& a, const std::pair<int, int>& b) {
+            return a.second > b.second;
+        });
+
+        // // Print the two largest values of the local maxima
+        // if (!localMaxima.empty()) {
+        //     std::cout << "Top two local maxima:" << std::endl;
+        //     for (size_t i = 0; i < std::min(localMaxima.size(), static_cast<size_t>(2)); ++i) {
+        //         std::cout << "Bin: " << localMaxima[i].first << ", Y value: " << (minY + localMaxima[i].first * 0.1f) << ", Count: " << localMaxima[i].second << std::endl;
+        //     }
+        // } else {
+        //     std::cout << "No local maxima found." << std::endl;
+        // }
+        
         return localMaxima;
     }
+
 
     visualization_msgs::Marker PAGSLAMNode::visualizeHistogramInRviz(const std::map<int, int>& histogram, float binWidth, float minY) {
         visualization_msgs::Marker marker;
@@ -1092,19 +1369,29 @@ namespace pagslam
         float binWidth = 0.1f; // Define bin width
         float minY = computeYAxisDensityHistogram(h_cloud_tmp, histogram, binWidth);
         
-        std::vector<int> localMaxima = extractLocalMaxima(histogram);
-        // Print the local maxima
-        std::cout << "Local maxima (bin indices): ";
-        for (int idx : localMaxima) {
-            std::cout << idx << " ";
+        std::vector<std::pair<int, int>> localMaxima = extractLocalMaxima(histogram);
+        std::vector<std::array<float, 2>> twoRowsYRange;
+        // Print the two largest values of the local maxima
+        if (!localMaxima.empty()) {
+            std::cout << "Top two local maxima:" << std::endl;
+            for (size_t i = 0; i < std::min(localMaxima.size(), static_cast<size_t>(2)); ++i) {
+                float yValue = minY + localMaxima[i].first * binWidth;
+                std::cout << "Bin: " << localMaxima[i].first << ", Count: " << localMaxima[i].second << ", Y-Value: " << yValue << std::endl;
+                
+                // Store the y-range for this local maximum
+                twoRowsYRange.push_back({yValue - 0.2f, yValue + 0.2f});
+                // std::cout << "Bin: " << localMaxima[i].first << ", Y value: " << (minY + localMaxima[i].first * binWidth) - 0.2 << " " << (minY + localMaxima[i].first * binWidth) + 0.2 <<  ", Count: " << localMaxima[i].second << std::endl;
+            }
+        } 
+        else {
+            std::cout << "No local maxima found." << std::endl;
         }
-        std::cout << std::endl;
 
         // Visualize histogram in RViz
         visualization_msgs::Marker marker_YHistogram = visualizeHistogramInRviz(histogram, binWidth, minY);
         pubYAxisHistogram_.publish(marker_YHistogram);
 
-        // bool_row_ = rowExtraction(h_cloud, pagslamIn, initialGuess);
+        bool_row_ = rowExtraction(h_cloud_tmp, twoRowsYRange, pagslamIn, initialGuess);
         // bool_ground_ = groundExtraction(h_cloud, pagslamIn, poseEstimate);
         
         // if (!bool_ground_){
@@ -1344,6 +1631,11 @@ namespace pagslam
         // Add visualization marker
         visualization_msgs::Marker plane_marker;
         plane_marker.header.frame_id = robot_frame_id_;  // Replace with your frame
+
+        if (groundType == 3){
+            plane_marker.header.frame_id = h_lidar_frame_id_;  // Replace with your frame
+        }
+
         // plane_marker.header.frame_id = "map";  // Replace with your frame
         plane_marker.header.stamp = ros::Time::now();
         plane_marker.ns = "ground_plane";
@@ -1407,6 +1699,75 @@ namespace pagslam
         // pubGroundMarker_.publish(plane_marker);
     }
 
+    visualization_msgs::Marker PAGSLAMNode::rowPlaneVisualization(pcl::ModelCoefficients::Ptr planeCoefficients, int groundType)
+    {
+        visualization_msgs::Marker plane_marker;
+        plane_marker.header.frame_id = h_lidar_frame_id_;  // Replace with your frame
+
+        // plane_marker.header.frame_id = "map";  // Replace with your frame
+        plane_marker.header.stamp = ros::Time::now();
+        plane_marker.ns = "row_plane";
+        plane_marker.id = 0;
+        plane_marker.type = visualization_msgs::Marker::CUBE;
+        plane_marker.action = visualization_msgs::Marker::ADD;
+
+        // Calculate the normal and centroid of the plane
+        Eigen::Vector3f normal(planeCoefficients->values[0],
+                               planeCoefficients->values[1],
+                               planeCoefficients->values[2]);
+
+        float d = planeCoefficients->values[3];
+        
+        cout << "Normal: " << normal << " " << d << endl;
+        // Calculate the centroid of the point cloud
+        // Eigen::Vector4f ground_centroid;
+        // pcl::compute3DCentroid(*groundFeature.cloud, ground_centroid);
+        // Eigen::Vector3f centroid(0, 0, -d / normal.norm());
+        Eigen::Vector3f centroid(0, -d / planeCoefficients->values[1], 0);
+
+        plane_marker.pose.position.x = centroid.x();
+        plane_marker.pose.position.y = centroid.y();
+        plane_marker.pose.position.z = centroid.z();
+
+        // Calculate the orientation from the normal vector
+        Eigen::Quaternionf q;
+        q.setFromTwoVectors(Eigen::Vector3f(0, 0, 1), normal.normalized());
+        plane_marker.pose.orientation.x = q.x();
+        plane_marker.pose.orientation.y = q.y();
+        plane_marker.pose.orientation.z = q.z();
+        plane_marker.pose.orientation.w = q.w();
+
+        // Set the size of the plane
+        plane_marker.scale.x = 4.0;
+        plane_marker.scale.y = 0.5;
+        plane_marker.scale.z = 0.01;  // Thickness of the plane
+
+        // Set the color and transparency
+        plane_marker.color.a = 0.5;  // Transparency
+
+        if (groundType == 0){
+            plane_marker.color.r = 0.0;
+            plane_marker.color.g = 1.0;
+            plane_marker.color.b = 0.0;
+            // cout << "Before : " << normal << endl;
+        }
+        else if (groundType == 1){
+            plane_marker.color.r = 1.0;
+            plane_marker.color.g = 0.0;
+            plane_marker.color.b = 0.0;
+            // cout << "After : " << normal << endl;
+        }
+        else if (groundType == 2){
+            plane_marker.color.r = 0.0;
+            plane_marker.color.g = 0.0;
+            plane_marker.color.b = 1.0;
+            // cout << "Prev : " << normal << endl;
+        }
+
+        return plane_marker;
+        // Publish the marker
+        // pubGroundMarker_.publish(plane_marker);
+    }
 
     visualization_msgs::MarkerArray PAGSLAMNode::stalkCloudClustersVisualization(const std::vector<CloudT::Ptr> outCloudClusters)
     {

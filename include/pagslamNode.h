@@ -46,12 +46,12 @@ namespace pagslam
             // bool groundExtraction(CloudT::Ptr& h_cloud, PagslamInput& pagslamIn);
             // bool groundExtraction(CloudT::Ptr& v_cloud, PagslamInput& pagslamIn);
             bool groundExtraction(CloudT::Ptr& h_cloud, PagslamInput& pagslamIn, const SE3 initialGuess);
-            bool rowExtraction(CloudT::Ptr& h_cloud, PagslamInput& pagslamIn, const SE3 initialGuess);  
+            bool rowExtraction(CloudT::Ptr& h_cloud, std::vector<std::array<float, 2>> twoRowsYRange, PagslamInput& pagslamIn, const SE3 initialGuess);  
             bool stalkExtraction(CloudT::Ptr& v_cloud, PagslamInput& pagslamIn);
             
             visualization_msgs::Marker visualizeHistogramInRviz(const std::map<int, int>& histogram, float binWidth, float minY);
             float computeYAxisDensityHistogram(const CloudT::Ptr& cloud, std::map<int, int>& histogram, float binWidth);
-            std::vector<int> extractLocalMaxima(const std::map<int, int>& histogram);
+            std::vector<std::pair<int, int>> extractLocalMaxima(const std::map<int, int>& histogram);
             void splitPointCloudByDensity(const CloudT::Ptr inCloud, std::vector<CloudT::Ptr>& cloudSegments, float binWidth, int minDensity);
     
             // bool run(const SE3 initialGuess, const SE3 prevKeyPose, CloudT::Ptr h_cloud, CloudT::Ptr v_cloud, ros::Time stamp, SE3 &outPose);
@@ -69,7 +69,7 @@ namespace pagslam
             
             visualization_msgs::MarkerArray mapCloudVisualization2(const std::vector<StalkFeature::Ptr>& stalkVector, int type);
             void projectStalk(const SE3 &tf, StalkFeature::Ptr &stalk);
-
+            visualization_msgs::Marker rowPlaneVisualization(pcl::ModelCoefficients::Ptr planeCoefficients, int groundType);
         private:
             void initParams_();
 
@@ -80,15 +80,22 @@ namespace pagslam
 
             ros::Publisher pubHCloud_;
             ros::Publisher pubVCloud_;
+
+            ros::Publisher pubRow1Cloud_;
+            ros::Publisher pubRow2Cloud_;
             
             ros::Publisher pubStalkCloud_;
             ros::Publisher pubGroundMarkerIn_;
             ros::Publisher pubGroundMarkerOut1_;
             ros::Publisher pubGroundMarkerOut2_;
+            
+            ros::Publisher pubRow1MarkerIn_;
+            ros::Publisher pubRow2MarkerIn_;
+
             ros::Publisher pubStalkCloudClustersMarker_;
             ros::Publisher pubStalkSeedClustersMarker_;
             ros::Publisher pubStalkLinesMarker_;
-
+            
             ros::Publisher pubTrajectory_;
             ros::Publisher pubOriginalTrajectory_;
             
