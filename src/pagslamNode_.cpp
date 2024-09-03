@@ -190,7 +190,125 @@ namespace pagslam
     // }
 
     
-    // (2) For a single LiDAR (vertical LiDAR)
+    // // (2) For a single LiDAR (vertical LiDAR)
+    // bool PAGSLAMNode::groundExtraction(CloudT::Ptr& h_cloud, PagslamInput& pagslamIn, const SE3 initialGuess)
+    // {
+    //     CloudT::Ptr groundCloud(new CloudT());
+    //     CloudT::Ptr groundCloud_outlier(new CloudT());
+    //     pcl::ModelCoefficients::Ptr groundCoefficients (new pcl::ModelCoefficients);
+               
+    //     // ******** (1) Ground plane *********        
+    //     // Filter the point cloud to use points with negative z-values
+    //     pcl::PassThrough<PointT> pass;
+    //     pass.setInputCloud(h_cloud);
+    //     pass.setFilterFieldName("y");
+    //     // pass.setFilterFieldName("z");
+    //     // (1) SIM
+    //     // pass.setFilterLimits(-1.0, -0.2);  // Set the filter limits for negative z-values
+    //     // pass.setFilterLimits(-1.0, -0.5);  // Set the filter limits for negative z-values
+        
+    //     // (2) ACRE
+    //     // pass.setFilterLimits(0.3, 0.5);  // Set the filter limits for positive y-values
+    //     pass.setFilterLimits(0.3, 0.8);  // Set the filter limits for positive y-values
+    //     // pass.setFilterLimits(-1.0, -0.5);  // Set the filter limits for negative z-values
+        
+    //     // pass.setFilterLimitsNegative(false);  // Keep points inside the limits
+    //     pass.filter(*h_cloud);
+
+    //     extractor_->ransac(h_cloud, groundCloud, groundCloud_outlier, groundCoefficients);
+        
+    //     // Transform the point cloud and model coefficients to robot_frame
+    //     bool_groundTransformFrame_ = transformFrame(v_lidar_frame_id_, robot_frame_id_, tf_groundSourceToTarget_);
+    //     // bool_groundTransformFrame_ = transformFrame(robot_frame_id_, v_lidar_frame_id_, tf_groundSourceToTarget_);
+        
+    //     // ROS_DEBUG_STREAM("Before Tf Ground: " << groundCoefficients->values[0] << " "
+    //     //     << groundCoefficients->values[1] << " "
+    //     //     << groundCoefficients->values[2] << " "
+    //     //     << groundCoefficients->values[3]);
+
+    //     if (bool_groundTransformFrame_){
+    //         extractor_->transformGroundPlane(tf_groundSourceToTarget_, groundCloud, groundCoefficients, pagslamIn, initialGuess);
+
+    //         // if (debugMode_){   
+    //         //     pubGroundCloud_.publish(pagslamIn.groundFeature.cloud);
+    //         //     groundPlaneVisualization(pagslamIn.groundFeature.coefficients);
+    //         // }
+            
+    //         // ROS_DEBUG_STREAM("After Tf Ground: " << pagslamIn.groundFeature.coefficients->values[0] << " "
+    //         // << pagslamIn.groundFeature.coefficients->values[1] << " "
+    //         // << pagslamIn.groundFeature.coefficients->values[2] << " "
+    //         // << pagslamIn.groundFeature.coefficients->values[3]);
+
+    //         // if (pagslamIn.groundFeature.coefficients->values[3] < 0 ||
+    //         // abs(pagslamIn.groundFeature.coefficients->values[3]/pagslamIn.groundFeature.coefficients->values[2]) > 1){    // If the extracted ground plane is not accurate
+    //         //     return false;
+    //         // }      
+
+    //         if (abs(pagslamIn.groundFeature.coefficients->values[3]/pagslamIn.groundFeature.coefficients->values[2]) > 1){    // If the extracted ground plane is not accurate
+    //             return false;
+    //         }         
+    //     }
+    //     else{
+    //         return false;
+    //     }
+
+    //     if (debugMode_){   
+    //         pubGroundCloud_.publish(pagslamIn.groundFeature.cloud);
+            
+    //         // visualization_msgs::Marker plane_marker_in = groundPlaneVisualization(pagslamIn.groundFeature, 0);
+    //         // pubGroundMarkerIn_.publish(plane_marker_in);
+    //     }
+    //     // if (debugMode_){   
+    //     //     pubHCloud_.publish(h_cloud);
+    //     // }
+
+    //     // // Add visualization marker
+    //     // visualization_msgs::Marker plane_marker;
+    //     // plane_marker.header.frame_id = robot_frame_id_;  // Replace with your frame
+    //     // plane_marker.header.stamp = ros::Time::now();
+    //     // plane_marker.ns = "ground_plane";
+    //     // plane_marker.id = 0;
+    //     // plane_marker.type = visualization_msgs::Marker::CUBE;
+    //     // plane_marker.action = visualization_msgs::Marker::ADD;
+
+    //     // // Calculate the normal and centroid of the plane
+    //     // Eigen::Vector3f normal(pagslamIn.groundFeature.coefficients->values[0],
+    //     //                        pagslamIn.groundFeature.coefficients->values[1],
+    //     //                        pagslamIn.groundFeature.coefficients->values[2]);
+
+    //     // float d = pagslamIn.groundFeature.coefficients->values[3];
+    //     // Eigen::Vector3f centroid(0, 0, -d / normal.norm());
+
+    //     // plane_marker.pose.position.x = centroid.x();
+    //     // plane_marker.pose.position.y = centroid.y();
+    //     // plane_marker.pose.position.z = centroid.z();
+
+    //     // // Calculate the orientation from the normal vector
+    //     // Eigen::Quaternionf q;
+    //     // q.setFromTwoVectors(Eigen::Vector3f(0, 0, 1), normal.normalized());
+    //     // plane_marker.pose.orientation.x = q.x();
+    //     // plane_marker.pose.orientation.y = q.y();
+    //     // plane_marker.pose.orientation.z = q.z();
+    //     // plane_marker.pose.orientation.w = q.w();
+
+    //     // // Set the size of the plane
+    //     // plane_marker.scale.x = 10.0;
+    //     // plane_marker.scale.y = 10.0;
+    //     // plane_marker.scale.z = 0.01;  // Thickness of the plane
+
+    //     // // Set the color and transparency
+    //     // plane_marker.color.a = 0.5;  // Transparency
+    //     // plane_marker.color.r = 0.0;
+    //     // plane_marker.color.g = 1.0;
+    //     // plane_marker.color.b = 0.0;
+
+    //     // // Publish the marker
+    //     // pubGroundMarker_.publish(plane_marker);
+
+    //     return true;
+    // }
+
+    // (3) For a single LiDAR (horizontal LiDAR)
     bool PAGSLAMNode::groundExtraction(CloudT::Ptr& h_cloud, PagslamInput& pagslamIn, const SE3 initialGuess)
     {
         CloudT::Ptr groundCloud(new CloudT());
@@ -201,16 +319,16 @@ namespace pagslam
         // Filter the point cloud to use points with negative z-values
         pcl::PassThrough<PointT> pass;
         pass.setInputCloud(h_cloud);
-        pass.setFilterFieldName("y");
-        // pass.setFilterFieldName("z");
+        // pass.setFilterFieldName("y");
+        pass.setFilterFieldName("z");
         // (1) SIM
         // pass.setFilterLimits(-1.0, -0.2);  // Set the filter limits for negative z-values
         // pass.setFilterLimits(-1.0, -0.5);  // Set the filter limits for negative z-values
         
         // (2) ACRE
         // pass.setFilterLimits(0.3, 0.5);  // Set the filter limits for positive y-values
-        pass.setFilterLimits(0.3, 0.8);  // Set the filter limits for positive y-values
-        // pass.setFilterLimits(-1.0, -0.5);  // Set the filter limits for negative z-values
+        // pass.setFilterLimits(0.3, 0.8);  // Set the filter limits for positive y-values
+        pass.setFilterLimits(-0.8, -0.5);  // Set the filter limits for negative z-values
         
         // pass.setFilterLimitsNegative(false);  // Keep points inside the limits
         pass.filter(*h_cloud);
@@ -218,7 +336,7 @@ namespace pagslam
         extractor_->ransac(h_cloud, groundCloud, groundCloud_outlier, groundCoefficients);
         
         // Transform the point cloud and model coefficients to robot_frame
-        bool_groundTransformFrame_ = transformFrame(v_lidar_frame_id_, robot_frame_id_, tf_groundSourceToTarget_);
+        bool_groundTransformFrame_ = transformFrame(h_lidar_frame_id_, robot_frame_id_, tf_groundSourceToTarget_);
         // bool_groundTransformFrame_ = transformFrame(robot_frame_id_, v_lidar_frame_id_, tf_groundSourceToTarget_);
         
         // ROS_DEBUG_STREAM("Before Tf Ground: " << groundCoefficients->values[0] << " "
