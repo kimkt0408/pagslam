@@ -482,7 +482,13 @@ namespace pagslam
         tf.translation()[0] = stalkOut[0];
         tf.translation()[1] = in_proj.poseEstimate.translation()[1];
         tf.translation()[2] = groundOut[0];
-        cout << tf.translation() << angleAxis << endl;
+
+        cout << "Optimization result: " << tf.translation()[0] << " " 
+        << tf.translation()[1] << " "
+        << tf.translation()[2] << " "
+        << groundOut[0] << " " 
+        << groundOut[1] << " " 
+        << rowOut[0] << endl;
         return true;
     }
 
@@ -829,9 +835,7 @@ namespace pagslam
         // Vector4 model_coeff (lastGroundFeature.coefficients->values[0], lastGroundFeature.coefficients->values[1], lastGroundFeature.coefficients->values[2], lastGroundFeature.coefficients->values[3]);
         Vector4 model_coeff (0.0, 0.0, 1.0, 0.0);
         
-        // cout << "**************" << scene_coeff << endl;
         if (abs(scene_coeff[2]) < 0.9){
-            // cout << "**************" << endl;
             success = false;
         }
 
@@ -959,7 +963,13 @@ namespace pagslam
                 ROS_DEBUG_STREAM("ZRollPitch: NOT Optimized After " << out[0] << " " << out[1] << " " << out[2]); 
             }
         }
-            
+        else{
+            out[0] = t[2];
+            out[1] = rpy[0];
+            out[2] = rpy[1];
+
+            ROS_DEBUG_STREAM("ZRollPitch: NOT Optimized After " << out[0] << " " << out[1] << " " << out[2]); 
+        }    
         
         // }
         // else{
@@ -1226,17 +1236,16 @@ namespace pagslam
             }
         }
         else{
-            // cout << in_proj.groundFeature.cloud->size() << " " << in_proj.stalkFeatures.size() << endl;
+            cout << in_proj.groundFeature.cloud->size() << " " << in_proj.stalkFeatures.size() << endl;
             // if (in_proj.groundFeature.cloud->size() == 0 || in_proj.stalkFeatures.size() == 0){
                 // ROS_WARN("No ground or landmark models found");
-            if (in_proj.stalkFeatures.size() == 0){
-                ROS_WARN("Only ground model found");
-            }
-            
             if (in_proj.groundFeature.cloud->size() == 0 && in_proj.stalkFeatures.size() == 0){
                 ROS_WARN("No ground and landmark models found");
                 return false;
             }
+            if (in_proj.stalkFeatures.size() == 0){
+                ROS_WARN("Only ground model found");
+            }          
             if (!in_proj.mapStalkFeatures.size()){
                 ROS_WARN("Not the first scan but map is empty! Ignoring Message");
 
