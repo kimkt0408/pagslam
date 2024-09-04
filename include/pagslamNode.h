@@ -70,6 +70,7 @@ namespace pagslam
             visualization_msgs::MarkerArray mapCloudVisualization2(const std::vector<StalkFeature::Ptr>& stalkVector, int type);
             void projectStalk(const SE3 &tf, StalkFeature::Ptr &stalk);
             visualization_msgs::Marker rowPlaneVisualization(pcl::ModelCoefficients::Ptr planeCoefficients, int groundType);
+            float calculateYawFromNormal(const pcl::ModelCoefficients::Ptr rowCoefficients); 
         private:
             void initParams_();
 

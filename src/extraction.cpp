@@ -427,6 +427,101 @@ namespace ext
         // pagslamIn.groundFeature.coefficients = tfm_groundCoefficients; 
     }
 
+    void Extraction::transformRowPlane(const tf2::Transform tf, const CloudT::Ptr& row1Cloud, const CloudT::Ptr& row2Cloud, pcl::ModelCoefficients::Ptr& row1Coefficients, pcl::ModelCoefficients::Ptr row2Coefficients, PagslamInput &pagslamIn, const SE3 initialGuess)
+    {
+        CloudT::Ptr tfm_row1Cloud(new CloudT());
+        pcl::ModelCoefficients::Ptr tfm_row1Coefficients (new pcl::ModelCoefficients);
+        CloudT::Ptr tfm_row2Cloud(new CloudT());
+        pcl::ModelCoefficients::Ptr tfm_row2Coefficients (new pcl::ModelCoefficients);
+        
+        geometry_msgs::Transform transform1;
+        tf2::convert(tf, transform1);
+
+        geometry_msgs::Transform transform2 = SE3ToTransform(initialGuess);
+        
+        // geometry_msgs::Transform transform = multiplyTransforms(transform2, transform1);
+        geometry_msgs::Transform transform = multiplyTransforms(transform1, transform2);
+        // geometry_msgs::Transform transform = transform1;
+
+        // (1) Point Cloud
+        pcl_ros::transformPointCloud(*row1Cloud, *tfm_row1Cloud, transform);
+        pcl_ros::transformPointCloud(*row2Cloud, *tfm_row2Cloud, transform);
+
+        // (2) Plane Coefficient
+        Eigen::Affine3d H_affine = tf2::transformToEigen(transform);
+        Eigen::Matrix4d H = H_affine.matrix();
+        Eigen::Matrix4d HInv = H.inverse();  
+        Eigen::Matrix4d HInvTrans = HInv.transpose(); 
+
+        Eigen::Vector4d row1_coeff_vec;
+        Eigen::Vector4d row2_coeff_vec;
+
+        row1Coefficients->values.resize(4);
+        row1_coeff_vec[0] = row1Coefficients->values[0];
+        row1_coeff_vec[1] = row1Coefficients->values[1];
+        row1_coeff_vec[2] = row1Coefficients->values[2];
+        row1_coeff_vec[3] = row1Coefficients->values[3];
+
+        Eigen::Vector4d tfm_row1_coeff_vec = HInvTrans * row1_coeff_vec.cast<double>();
+
+        tfm_row1Coefficients->values.resize(4);
+        tfm_row1Coefficients->values[0] = tfm_row1_coeff_vec[0];
+        tfm_row1Coefficients->values[1] = tfm_row1_coeff_vec[1];
+        tfm_row1Coefficients->values[2] = tfm_row1_coeff_vec[2];
+        tfm_row1Coefficients->values[3] = tfm_row1_coeff_vec[3];
+
+        row2Coefficients->values.resize(4);
+        row2_coeff_vec[0] = row2Coefficients->values[0];
+        row2_coeff_vec[1] = row2Coefficients->values[1];
+        row2_coeff_vec[2] = row2Coefficients->values[2];
+        row2_coeff_vec[3] = row2Coefficients->values[3];
+
+        Eigen::Vector4d tfm_row2_coeff_vec = HInvTrans * row2_coeff_vec.cast<double>();
+
+        tfm_row2Coefficients->values.resize(4);
+        tfm_row2Coefficients->values[0] = tfm_row2_coeff_vec[0];
+        tfm_row2Coefficients->values[1] = tfm_row2_coeff_vec[1];
+        tfm_row2Coefficients->values[2] = tfm_row2_coeff_vec[2];
+        tfm_row2Coefficients->values[3] = tfm_row2_coeff_vec[3];
+
+        // cout << "Before: Model coefficients: " << groundCoefficients->values[0] << " " 
+        //                             << groundCoefficients->values[1] << " "
+        //                             << groundCoefficients->values[2] << " " 
+        //                             << groundCoefficients->values[3] << " " 
+        //                             << -groundCoefficients->values[3]/groundCoefficients->values[2] << endl;
+        
+        // cout << "After: Model coefficients: " << tfm_groundCoefficients->values[0] << " " 
+        //                             << tfm_groundCoefficients->values[1] << " "
+        //                             << tfm_groundCoefficients->values[2] << " " 
+        //                             << tfm_groundCoefficients->values[3] << " " 
+        //                             << -tfm_groundCoefficients->values[3]/tfm_groundCoefficients->values[2] << endl;
+
+        tfm_row1Coefficients->header.seq = row1Cloud->header.seq;
+        tfm_row1Coefficients->header.stamp = row1Cloud->header.stamp;
+        tfm_row1Coefficients->header.frame_id = robot_frame_id_;
+
+        pagslamIn.row1Feature.cloud = tfm_row1Cloud;
+        pagslamIn.row1Feature.cloud->header.frame_id = robot_frame_id_;
+
+        pagslamIn.row1Feature.coefficients = tfm_row1Coefficients;  
+
+        tfm_row2Coefficients->header.seq = row2Cloud->header.seq;
+        tfm_row2Coefficients->header.stamp = row2Cloud->header.stamp;
+        tfm_row2Coefficients->header.frame_id = robot_frame_id_;
+
+        pagslamIn.row2Feature.cloud = tfm_row2Cloud;
+        pagslamIn.row2Feature.cloud->header.frame_id = robot_frame_id_;
+
+        pagslamIn.row2Feature.coefficients = tfm_row2Coefficients;  
+        // tfm_groundCoefficients->header.seq = groundCloud->header.seq;
+        // tfm_groundCoefficients->header.stamp = groundCloud->header.stamp;
+        // tfm_groundCoefficients->header.frame_id = "map";
+
+        // pagslamIn.groundFeature.cloud = tfm_groundCloud;
+        // pagslamIn.groundFeature.cloud->header.frame_id = "map";
+
+        // pagslamIn.groundFeature.coefficients = tfm_groundCoefficients; 
+    }
 
     // void Extraction::transformGroundPlane(const tf2::Transform tf, const CloudT::Ptr& groundCloud, pcl::ModelCoefficients::Ptr& groundCoefficients, PagslamInput &pagslamIn)
     // {

@@ -687,12 +687,12 @@ namespace pagslam
     //     CloudT::Ptr downsampledCloud(new CloudT);
     //     sor.filter(*downsampledCloud);
 
-    //     CloudT::Ptr rowCloud1(new CloudT());
-    //     CloudT::Ptr rowCloud1_outlier(new CloudT());
-    //     pcl::ModelCoefficients::Ptr rowCoefficients1 (new pcl::ModelCoefficients);
-    //     CloudT::Ptr rowCloud2(new CloudT());
-    //     CloudT::Ptr rowCloud2_outlier(new CloudT());
-    //     pcl::ModelCoefficients::Ptr rowCoefficients2 (new pcl::ModelCoefficients);
+    //     CloudT::Ptr row1Cloud(new CloudT());
+    //     CloudT::Ptr row1Cloud_outlier(new CloudT());
+    //     pcl::ModelCoefficients::Ptr row1Coefficients (new pcl::ModelCoefficients);
+    //     CloudT::Ptr row2Cloud(new CloudT());
+    //     CloudT::Ptr row2Cloud_outlier(new CloudT());
+    //     pcl::ModelCoefficients::Ptr row2Coefficients (new pcl::ModelCoefficients);
         
     //     // CloudT::Ptr h_cloud1(new CloudT);  // Initialize h_cloud1 as a new point cloud
     //     // pcl::copyPointCloud(*downsampledCloud, *h_cloud1);  // Copy the points from h_cloud to h_cloud1
@@ -795,27 +795,27 @@ namespace pagslam
 
 
     //     // extractor_->ransac(h_cloud, rowCloud, rowCloud_outlier, rowCoefficients);
-    //     extractor_->rowRansac(h_cloud1, rowCloud1, rowCloud1_outlier, rowCoefficients1);
+    //     extractor_->rowRansac(h_cloud1, row1Cloud, row1Cloud_outlier, row1Coefficients);
         
-    //     ROS_DEBUG_STREAM("Before Tf Row1: " << rowCoefficients1->values[0] << " "
-    //         << rowCoefficients1->values[1] << " "
-    //         << rowCoefficients1->values[2] << " "
-    //         << rowCoefficients1->values[3]);
+    //     ROS_DEBUG_STREAM("Before Tf Row1: " << row1Coefficients->values[0] << " "
+    //         << row1Coefficients->values[1] << " "
+    //         << row1Coefficients->values[2] << " "
+    //         << row1Coefficients->values[3]);
 
-    //     extractor_->rowRansac(h_cloud2, rowCloud2, rowCloud2_outlier, rowCoefficients2);
+    //     extractor_->rowRansac(h_cloud2, row2Cloud, row2Cloud_outlier, row2Coefficients);
         
-    //     ROS_DEBUG_STREAM("Before Tf Row2: " << rowCoefficients2->values[0] << " "
-    //         << rowCoefficients2->values[1] << " "
-    //         << rowCoefficients2->values[2] << " "
-    //         << rowCoefficients2->values[3]);
+    //     ROS_DEBUG_STREAM("Before Tf Row2: " << row2Coefficients->values[0] << " "
+    //         << row2Coefficients->values[1] << " "
+    //         << row2Coefficients->values[2] << " "
+    //         << row2Coefficients->values[3]);
 
         
 
 
-    //     visualization_msgs::Marker row1_plane = rowPlaneVisualization(rowCoefficients1, 0);        
+    //     visualization_msgs::Marker row1_plane = rowPlaneVisualization(row1Coefficients, 0);        
     //     pubRow1MarkerIn_.publish(row1_plane);
 
-    //     visualization_msgs::Marker row2_plane = rowPlaneVisualization(rowCoefficients2, 0);        
+    //     visualization_msgs::Marker row2_plane = rowPlaneVisualization(row2Coefficients, 0);        
     //     pubRow2MarkerIn_.publish(row2_plane);
 
     //     // Transform the point cloud and model coefficients to robot_frame
@@ -918,12 +918,12 @@ namespace pagslam
         CloudT::Ptr downsampledCloud(new CloudT);
         sor.filter(*downsampledCloud);
 
-        CloudT::Ptr rowCloud1(new CloudT());
-        CloudT::Ptr rowCloud1_outlier(new CloudT());
-        pcl::ModelCoefficients::Ptr rowCoefficients1 (new pcl::ModelCoefficients);
-        CloudT::Ptr rowCloud2(new CloudT());
-        CloudT::Ptr rowCloud2_outlier(new CloudT());
-        pcl::ModelCoefficients::Ptr rowCoefficients2 (new pcl::ModelCoefficients);
+        CloudT::Ptr row1Cloud(new CloudT());
+        CloudT::Ptr row1Cloud_outlier(new CloudT());
+        pcl::ModelCoefficients::Ptr row1Coefficients (new pcl::ModelCoefficients);
+        CloudT::Ptr row2Cloud(new CloudT());
+        CloudT::Ptr row2Cloud_outlier(new CloudT());
+        pcl::ModelCoefficients::Ptr row2Coefficients (new pcl::ModelCoefficients);
         
         CloudT::Ptr h_cloud1(new CloudT);  // Initialize h_cloud1 as a new point cloud
         pcl::copyPointCloud(*h_cloud, *h_cloud1);  // Copy the points from h_cloud to h_cloud1
@@ -932,41 +932,52 @@ namespace pagslam
 
         // ******** (1) Ground plane *********        
         // Filter the point cloud to use points with negative z-values
+
+        std::array<float, 2> RowYRange1;
+        std::array<float, 2> RowYRange2;
+
+        if (twoRowsYRange[0][0] < twoRowsYRange[1][1]){
+            RowYRange1 = twoRowsYRange[0];
+            RowYRange2 = twoRowsYRange[1];
+        }
+        else{
+            RowYRange1 = twoRowsYRange[1];
+            RowYRange2 = twoRowsYRange[0];
+        }
         pcl::PassThrough<PointT> pass1;
         pass1.setInputCloud(h_cloud1);
         pass1.setFilterFieldName("y");
-        pass1.setFilterLimits(twoRowsYRange[0][0], twoRowsYRange[0][1]);  // Set the filter limits for negative z-values
+        pass1.setFilterLimits(RowYRange1[0], RowYRange1[1]);  // Set the filter limits for negative z-values
         pass1.filter(*h_cloud1);
         pubRow1Cloud_.publish(h_cloud1);
 
         pcl::PassThrough<PointT> pass2;
         pass2.setInputCloud(h_cloud2);
         pass2.setFilterFieldName("y");
-        pass2.setFilterLimits(twoRowsYRange[1][0], twoRowsYRange[1][1]);  // Set the filter limits for negative z-values
+        pass2.setFilterLimits(RowYRange2[0], RowYRange2[1]);  // Set the filter limits for negative z-values
         pass2.filter(*h_cloud2);
         pubRow2Cloud_.publish(h_cloud2);
 
         // extractor_->ransac(h_cloud, rowCloud, rowCloud_outlier, rowCoefficients);
-        extractor_->rowRansac(h_cloud1, rowCloud1, rowCloud1_outlier, rowCoefficients1);
+        extractor_->rowRansac(h_cloud1, row1Cloud, row1Cloud_outlier, row1Coefficients);
+        extractor_->rowRansac(h_cloud2, row2Cloud, row2Cloud_outlier, row2Coefficients);
         
-        ROS_DEBUG_STREAM("Before Tf Row1: " << rowCoefficients1->values[0] << " "
-            << rowCoefficients1->values[1] << " "
-            << rowCoefficients1->values[2] << " "
-            << rowCoefficients1->values[3]);
-
-        extractor_->rowRansac(h_cloud2, rowCloud2, rowCloud2_outlier, rowCoefficients2);
+        ROS_DEBUG_STREAM("Before Tf Row1: " << row1Coefficients->values[0] << " "
+            << row1Coefficients->values[1] << " "
+            << row1Coefficients->values[2] << " "
+            << row1Coefficients->values[3]);
         
-        ROS_DEBUG_STREAM("Before Tf Row2: " << rowCoefficients2->values[0] << " "
-            << rowCoefficients2->values[1] << " "
-            << rowCoefficients2->values[2] << " "
-            << rowCoefficients2->values[3]);
+        ROS_DEBUG_STREAM("Before Tf Row2: " << row2Coefficients->values[0] << " "
+            << row2Coefficients->values[1] << " "
+            << row2Coefficients->values[2] << " "
+            << row2Coefficients->values[3]);
 
-        visualization_msgs::Marker row1_plane = rowPlaneVisualization(rowCoefficients1, 0);        
+        visualization_msgs::Marker row1_plane = rowPlaneVisualization(row1Coefficients, 0);        
         pubRow1MarkerIn_.publish(row1_plane);
-
-        visualization_msgs::Marker row2_plane = rowPlaneVisualization(rowCoefficients2, 0);        
+        visualization_msgs::Marker row2_plane = rowPlaneVisualization(row2Coefficients, 0);        
         pubRow2MarkerIn_.publish(row2_plane);
 
+        
         // Transform the point cloud and model coefficients to robot_frame
         bool_rowTransformFrame_ = transformFrame(h_lidar_frame_id_, robot_frame_id_, tf_rowSourceToTarget_);
         // bool_groundTransformFrame_ = transformFrame(robot_frame_id_, v_lidar_frame_id_, tf_groundSourceToTarget_);
@@ -974,8 +985,30 @@ namespace pagslam
         
 
         if (bool_rowTransformFrame_){
-            // extractor_->transformGroundPlane(tf_rowSourceToTarget_, rowCloud, rowCoefficients, pagslamIn, initialGuess);
+            extractor_->transformRowPlane(tf_rowSourceToTarget_, row1Cloud, row2Cloud, row1Coefficients, row2Coefficients, pagslamIn, initialGuess);
+            // extractor_->transformRowPlane(tf_rowSourceToTarget_, row2Cloud, pagslamIn, initialGuess);
 
+            // // Construct normal vectors from the coefficients
+            // Eigen::Vector3f normal1(row1Coefficients->values[0], row1Coefficients->values[1], row1Coefficients->values[2]);
+            // Eigen::Vector3f normal2(row2Coefficients->values[0], row2Coefficients->values[1], row2Coefficients->values[2]);
+
+            float yaw1 = calculateYawFromNormal(row1Coefficients);
+            float yaw2 = calculateYawFromNormal(row2Coefficients);
+
+            // Convert to degrees if necessary
+            float yaw1_deg = yaw1 * 180.0 / M_PI;
+            float yaw2_deg = yaw2 * 180.0 / M_PI;
+
+            std::cout << "Yaw angle for row 1 (radians): " << yaw1 << " (degrees): " << yaw1_deg << std::endl;
+            std::cout << "Yaw angle for row 2 (radians): " << yaw2 << " (degrees): " << yaw2_deg << std::endl;
+
+            float row1_y_intercept = -row1Coefficients->values[3]/row1Coefficients->values[1];
+            float row2_y_intercept = -row2Coefficients->values[3]/row2Coefficients->values[1];
+            
+            cout << "row1 y intercept: " << row1_y_intercept << endl;
+            cout << "row2 y intercept: " << row2_y_intercept << endl;
+
+              
             // // if (debugMode_){   
             // //     pubGroundCloud_.publish(pagslamIn.groundFeature.cloud);
             // //     groundPlaneVisualization(pagslamIn.groundFeature.coefficients);
@@ -1054,6 +1087,24 @@ namespace pagslam
 
         return true;
     }
+
+    // Function to calculate the yaw angle from a normal vector
+    float PAGSLAMNode::calculateYawFromNormal(const pcl::ModelCoefficients::Ptr rowCoefficients) {
+        Eigen::Vector3f normal(rowCoefficients->values[0], rowCoefficients->values[1], rowCoefficients->values[2]);
+
+        // Normalize the normal vector to get the direction
+        Eigen::Vector3f normalized_normal = normal.normalized();
+
+        // Project the normal vector onto the xy-plane (ignore z-component)
+        float a = normalized_normal.x();
+        float b = normalized_normal.y();
+
+        // Calculate the yaw angle using atan2 to get the correct quadrant
+        float yaw = std::atan2(b, a);
+
+        return yaw; // Return yaw angle in radians
+    }
+
 
     float PAGSLAMNode::computeYAxisDensityHistogram(const CloudT::Ptr& cloud, std::map<int, int>& histogram, float binWidth) {
         pcl::PassThrough<PointT> pass;
@@ -1356,6 +1407,7 @@ namespace pagslam
         
         ROS_DEBUG_STREAM("Entering Callback. Lidar data stamp: " << odom.stamp);
 
+        // (1) Ground Extraction
         // SEGMENTATION
         // bool_ground_ = groundExtraction(v_cloud, pagslamIn);
         // bool_ground_ = groundExtraction(h_cloud, pagslamIn);
@@ -1363,7 +1415,9 @@ namespace pagslam
         pcl::copyPointCloud(*h_cloud, *h_cloud_tmp);  // Copy the points from h_cloud to h_cloud_tmp
 
         bool_ground_ = groundExtraction(h_cloud, pagslamIn, initialGuess);
-                
+
+
+        // (2) Row Extraction
         // Compute histogram
         std::map<int, int> histogram;
         float binWidth = 0.1f; // Define bin width
@@ -1379,7 +1433,7 @@ namespace pagslam
                 std::cout << "Bin: " << localMaxima[i].first << ", Count: " << localMaxima[i].second << ", Y-Value: " << yValue << std::endl;
                 
                 // Store the y-range for this local maximum
-                twoRowsYRange.push_back({yValue - 0.2f, yValue + 0.2f});
+                twoRowsYRange.push_back({yValue - 0.15f, yValue + 0.15f});
                 // std::cout << "Bin: " << localMaxima[i].first << ", Y value: " << (minY + localMaxima[i].first * binWidth) - 0.2 << " " << (minY + localMaxima[i].first * binWidth) + 0.2 <<  ", Count: " << localMaxima[i].second << std::endl;
             }
         } 
@@ -1399,6 +1453,7 @@ namespace pagslam
         //     return false;
         // }
 
+        // (3) Stalk Extraction
         bool_stalk_ = stalkExtraction(v_cloud, pagslamIn);  
 
         visualization_msgs::Marker plane_marker_in = groundPlaneVisualization(pagslamIn.groundFeature, 0);        
@@ -1718,7 +1773,7 @@ namespace pagslam
 
         float d = planeCoefficients->values[3];
         
-        cout << "Normal: " << normal << " " << d << endl;
+        // cout << "Normal: " << normal << " " << d << endl;
         // Calculate the centroid of the point cloud
         // Eigen::Vector4f ground_centroid;
         // pcl::compute3DCentroid(*groundFeature.cloud, ground_centroid);

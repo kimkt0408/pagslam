@@ -66,6 +66,7 @@ namespace ext
             
             // void transformGroundPlane(const tf2::Transform tf, const CloudT::Ptr& groundCloud, pcl::ModelCoefficients::Ptr& groundCoefficients, PagslamInput &pagslamIn);
             void transformGroundPlane(const tf2::Transform tf, const CloudT::Ptr& groundCloud, pcl::ModelCoefficients::Ptr& groundCoefficients, PagslamInput &pagslamIn, const SE3 initialGuess);
+            void transformRowPlane(const tf2::Transform tf, const CloudT::Ptr& row1Cloud, const CloudT::Ptr& row2Cloud, pcl::ModelCoefficients::Ptr& row1Coefficients, pcl::ModelCoefficients::Ptr row2Coefficients, PagslamInput &pagslamIn, const SE3 initialGuess);
     
             bool stalkCloudExtraction(const CloudT::Ptr inCloud, CloudT::Ptr& outCloud);
             // bool stalkCloudClustersExtraction(CloudT::Ptr inCloud, std::vector<CloudT::Ptr>& outCloudClusters);

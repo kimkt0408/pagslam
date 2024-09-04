@@ -47,17 +47,32 @@ namespace pagslam
     }
 
 
-    void pagslam::projectFeatures(const SE3 &tf, GroundFeature &ground, std::vector<StalkFeature::Ptr> &stalks){
-        projectGround(tf, ground);
+    void pagslam::projectFeatures(const SE3 &tf, PagslamInput &in){
+        projectGround(tf, in.groundFeature);
         // bool firstStalk = false;
-        for (auto &stalk : stalks){
+        for (auto &stalk : in.stalkFeatures){
             // projectStalk(tf, stalk, firstStalk);
             projectStalk(tf, stalk);
             // if (firstStalk){
             //     firstStalk == false;
             // }
         }
+
+        projectGround(tf, in.row1Feature);
+        projectGround(tf, in.row2Feature);
     }
+
+    // void pagslam::projectFeatures(const SE3 &tf, GroundFeature &ground, std::vector<StalkFeature::Ptr> &stalks){
+    //     projectGround(tf, ground);
+    //     // bool firstStalk = false;
+    //     for (auto &stalk : stalks){
+    //         // projectStalk(tf, stalk, firstStalk);
+    //         projectStalk(tf, stalk);
+    //         // if (firstStalk){
+    //         //     firstStalk == false;
+    //         // }
+    //     }
+    // }
 
 
     void pagslam::projectGround(const SE3 &tf, GroundFeature &ground){
@@ -434,7 +449,42 @@ namespace pagslam
 
         return true;
     }
+    
+    bool pagslam::ThreeStepOptimizePose(const PagslamInput &in_proj, 
+        const bool stalkCheck, 
+        const std::vector<FeatureMatch<StalkFeature::Ptr>> &stalkMatches,
+        SE3 &tf)
+    {
+        double stalkOut[1];
+        // double stalkOut[3];
+        double rowOut[1];
+        double groundOut[3];
 
+        // (1) Stalk feature optimization
+        // OptimizeXYYaw(in_proj.poseEstimate, stalkCheck, stalkMatches, stalkOut);
+        
+        // (1) Stalk feature optimization
+        OptimizeX(in_proj.poseEstimate, stalkCheck, stalkMatches, stalkOut);
+        
+        // (2) Ground feature optimization
+        OptimizeYaw(in_proj.poseEstimate, in_proj.row1Feature, in_proj.row2Feature, prevRow1Features_, prevRow2Features_, rowOut);
+        
+        // (2) Ground feature optimization
+        OptimizeZRollPitch(in_proj.poseEstimate, in_proj.groundFeature, prevGroundFeatures_, groundOut);
+        
+        // roll, pitch, yaw
+        double q[4];
+        double angleAxis[3] = {groundOut[1], groundOut[2], rowOut[0]};
+        ceres::AngleAxisToQuaternion(angleAxis, q);
+        Quat quat(q[0], q[1], q[2], q[3]);
+
+        tf.setQuaternion(quat);
+        tf.translation()[0] = stalkOut[0];
+        tf.translation()[1] = in_proj.poseEstimate.translation()[1];
+        tf.translation()[2] = groundOut[0];
+        cout << tf.translation() << angleAxis << endl;
+        return true;
+    }
 
     // void pagslam::OptimizeXYYaw(const SE3& poseEstimate, const bool optimize, const std::vector<FeatureMatch<StalkFeature::Ptr>> &stalkMatches, double* out)
     // {
@@ -643,6 +693,112 @@ namespace pagslam
         }
     }
 
+    void pagslam::OptimizeX(const SE3& poseEstimate, const bool optimize, const std::vector<FeatureMatch<StalkFeature::Ptr>> &stalkMatches, double* out)
+    {
+        auto t = poseEstimate.translation();
+        auto q = poseEstimate.unit_quaternion();
+        double quat[4] = {q.w(), q.x(), q.y(), q.z()};
+        double rpy[3];
+
+        ceres::QuaternionToAngleAxis(quat, rpy);
+        double params[6] = {t[0], t[1], t[2], rpy[0], rpy[1], rpy[2]};
+
+        // cout << "-------------------------------------------------------------" << endl;
+        ROS_DEBUG_STREAM("X Before " << params[0]); 
+        // cout << "XYYaw Before " << params[0] << " " << params[1] << " " << params[5] << endl; 
+        bool success = true;
+
+        if(optimize){
+            ceres::LossFunction *loss = NULL;
+            // loss = new ceres::HuberLoss(0.1);
+            loss = new ceres::HuberLoss(huberLossThresh_);
+            ceres::Problem::Options problem_options;
+            ceres::Problem problem(problem_options);
+
+            problem.AddParameterBlock(params, 6);
+            // setting z, roll and pitch as constant
+            ceres::SubsetParameterization *subset_parameterization =
+                // new ceres::SubsetParameterization(6, {2, 3, 4});
+                // new ceres::SubsetParameterization(6, {1, 2, 3, 4});
+                new ceres::SubsetParameterization(6, {1, 2, 3, 4, 5});
+            problem.SetParameterization(params, subset_parameterization);
+
+            for (auto stalkMatch : stalkMatches){
+                Vector3 root = stalkMatch.modelFeature->root.cast<double>();
+                Vector3 direction = stalkMatch.modelFeature->direction.cast<double>();
+                // double weight = stalkMatch.modelFeature->cloud.size();
+                // double weight = 1.0/stalkMatch.sceneFeature->cloud.size();
+
+                // cout << root << " " << direction << endl;
+                
+                double weight = 1.0;
+                int n = 0;
+                // double weight = 1e2/stalkMatch.sceneFeature->cloud.size();
+                CloudT modelCloud = stalkMatch.modelFeature->cloud;
+                
+                // cout << "!!!: " << stalkMatch.sceneFeature->cloud.size() << endl;
+                for (auto point : stalkMatch.sceneFeature->cloud){
+                    Vector3 pt (point.x, point.y, point.z);
+                    ceres::CostFunction* cost =
+                        new ceres::AutoDiffCostFunction<XYYawLineCost, 1, 6>(
+                            new XYYawLineCost(pt, root, direction, modelCloud, weight));
+                            // new XYYawLineCost(pt, root, direction, weight));
+                    problem.AddResidualBlock(cost, loss, params);
+                    n = n + 1;
+                    // cout << "&&&: " << problem.NumResidualBlocks() << endl;
+                }
+                // cout << "???: " << n << endl;
+            }
+
+            // cout << "=====================================" << endl;
+        
+
+            ceres::Solver::Options options;
+            options.function_tolerance = 1e-6;  // Adjust this value as needed.
+            options.parameter_tolerance = 1e-7;  // Adjust this value as needed.            
+            
+            options.max_num_iterations = maxNumIterations_;
+
+            // options.linear_solver_type = ceres::DENSE_QR;
+            options.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;
+            // options.logging_type = ceres::SILENT;
+
+            // options.trust_region_strategy_type = ceres::DOGLEG;
+            // options.preconditioner_type = ceres::JACOBI;
+
+            // options.logging_type = ceres::PER_MINIMIZER_ITERATION;
+
+            // options.minimizer_progress_to_stdout = true;
+            
+            
+            ceres::Solver::Summary summary;
+            ceres::Solve(options, &problem, &summary);
+            success = (summary.termination_type == 0);
+
+            // std::cout << summary.BriefReport() << "\n";
+
+            // std::cout << summary.FullReport() << "\n" << endl;
+            
+        }
+        
+        
+        if(optimize && success){
+            out[0] = params[0];
+            // out[1] = params[1];
+            // out[2] = params[5];
+
+            ROS_DEBUG_STREAM("X: Optimized After " << out[0]); 
+            // cout << "**************XYYaw: Optimized After " << out[0] << " " << out[1] << " " << out[2] << "**************" << endl; 
+        }
+        else{
+            out[0] = t[0];
+            // out[1] = t[1];
+            // out[2] = rpy[2];
+    
+            ROS_DEBUG_STREAM("X: NOT Optimized After " << out[0]); 
+        }
+    }
+
     void pagslam::OptimizeZRollPitch(const SE3& poseEstimate, const GroundFeature &currFeature, std::vector<GroundFeature> &mapFeatures, double* out){
         auto t = poseEstimate.translation();
         auto q = poseEstimate.unit_quaternion();
@@ -752,8 +908,8 @@ namespace pagslam
         std::vector<double*> parameter_blocks;
         problem.GetParameterBlocks(&parameter_blocks);
 
-        double cost = 0.0;
-        std::vector<double> residuals;
+        // double cost = 0.0;
+        // std::vector<double> residuals;
         // problem.Evaluate(ceres::Problem::EvaluateOptions(), &cost, &residuals, nullptr, nullptr);
 
         // for (double* param_block : parameter_blocks) {
@@ -803,6 +959,167 @@ namespace pagslam
                 ROS_DEBUG_STREAM("ZRollPitch: NOT Optimized After " << out[0] << " " << out[1] << " " << out[2]); 
             }
         }
+            
+        
+        // }
+        // else{
+        //     // For Single LiDAR (Vertical LiDAR)
+        //     out[0] = t[2];  
+        //     out[1] = rpy[0];
+        //     out[2] = rpy[1];
+
+        //     ROS_DEBUG_STREAM("ZRollPitch: NOT Optimized After " << out[0] << " " << out[1] << " " << out[2]); 
+        // }
+        
+    }
+    
+
+    void pagslam::OptimizeYaw(const SE3& poseEstimate, const GroundFeature &currRow1Feature, const GroundFeature &currRow2Feature, std::vector<GroundFeature> &mapRow1Features, std::vector<GroundFeature> &mapRow2Features, double* out){
+        auto t = poseEstimate.translation();
+        auto q = poseEstimate.unit_quaternion();
+        double quat[4] = {q.w(), q.x(), q.y(), q.z()};
+        double rpy[3];
+
+        ceres::QuaternionToAngleAxis(quat, rpy);
+        double params[6] = {t[0], t[1], t[2], rpy[0], rpy[1], rpy[2]};
+        
+        ROS_DEBUG_STREAM("Yaw Before " << rpy[2]); 
+        // cout << "ZRollPitch Before " << params[2] << " " << params[3] << " " << params[4] << endl;; 
+        bool success = true;
+
+        ceres::LossFunction *loss = NULL;
+        loss = new ceres::HuberLoss(huberLossThresh_);
+        ceres::Problem::Options problem_options;
+        ceres::Problem problem(problem_options);
+
+        problem.AddParameterBlock(params, 6);
+        // setting z, roll and pitch as constant
+        ceres::SubsetParameterization *subset_parameterization =
+            // new ceres::SubsetParameterization(6, {0, 1, 5});
+            new ceres::SubsetParameterization(6, {0, 1, 2, 3, 4});
+        problem.SetParameterization(params, subset_parameterization);
+
+        GroundFeature lastGroundFeature = mapRow1Features.back();
+
+        Vector4 scene_coeff (currRow1Feature.coefficients->values[0], currRow1Feature.coefficients->values[1], currRow1Feature.coefficients->values[2], currRow1Feature.coefficients->values[3]);
+        Vector4 model_coeff (lastGroundFeature.coefficients->values[0], lastGroundFeature.coefficients->values[1], lastGroundFeature.coefficients->values[2], lastGroundFeature.coefficients->values[3]);
+        // Vector4 model_coeff (0.0, 0.0, 1.0, 0.0);
+        cout << "CURR: " << scene_coeff << endl;
+        cout << "PREV: " << model_coeff << endl;
+        double weight = 1; 
+        ceres::CostFunction* cost =
+                        new ceres::AutoDiffCostFunction<YawRowCost, 1, 6>(
+                            new YawRowCost(scene_coeff, model_coeff, weight));
+        problem.AddResidualBlock(cost, loss, params);
+        // cout << "**************" << scene_coeff << endl;
+        // if (abs(scene_coeff[2]) < 0.9){
+        //     // cout << "**************" << endl;
+        //     success = false;
+        // }
+
+        // double scene_model_diff = scene_coeff[0]*model_coeff[0] + scene_coeff[1]*model_coeff[1];
+        
+        // int i = 0;
+        // for (auto point : currFeature.cloud->points){
+        //     const double distance = sqrt(point.x*point.x + point.y*point.y + point.z*point.z);
+        //     if (distance < rangeGroundMatch_){
+        //         Vector3 scene_point (point.x, point.y, point.z);
+        //         double weight = 1/distance;
+        //         // double weight = scene_point.norm();
+        //         // double weight = 1e-2; // 1e-2
+        //         // double threshold = 0.2; // 0.2
+
+        //         // double weight = 1; // 1e-2
+        
+        //         ceres::CostFunction* cost =
+        //                 new ceres::AutoDiffCostFunction<YawRowCost, 1, 6>(
+        //                     new YawRowCost(scene_point, scene_coeff, model_coeff, weight));
+        //         // ceres::CostFunction* cost =
+        //         //         new ceres::AutoDiffCostFunction<ZRollPitchGroundCost, 1, 6>(
+        //         //             new ZRollPitchGroundCost(scene_point, scene_coeff, model_coeff, weight, threshold));
+                        
+        //         problem.AddResidualBlock(cost, loss, params);
+        //         i++;
+        //     }
+        // }
+
+        
+        std::vector<double*> parameter_blocks;
+        problem.GetParameterBlocks(&parameter_blocks);
+
+        // double cost = 0.0;
+        // std::vector<double> residuals;
+        // problem.Evaluate(ceres::Problem::EvaluateOptions(), &cost, &residuals, nullptr, nullptr);
+
+        // for (double* param_block : parameter_blocks) {
+        //     // Assuming a 6-dimensional parameter block for this example.
+        //     std::cout << "Parameter values: ";
+        //     for (int i = 0; i < 6; i++) {
+        //         std::cout << param_block[i] << " ";
+        //     }
+        //     std::cout << std::endl;
+        // }
+
+
+        ceres::Solver::Options options;
+        options.function_tolerance = 1e-8;  // Adjust this value as needed.            
+        options.parameter_tolerance = 1e-10;  // Adjust this value as needed.            
+        options.max_num_iterations = maxNumIterations_;
+
+        options.linear_solver_type = ceres::DENSE_QR;
+        // options.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;
+        // options.logging_type = ceres::SILENT;
+        // options.logging_type = ceres::PER_MINIMIZER_ITERATION;
+
+        ceres::Solver::Summary summary;
+        // std::cout << summary.FullReport() << "\n";
+        ceres::Solve(options, &problem, &summary);
+    
+        // success = (summary.termination_type == 0);
+        
+        // std::cout << summary.FullReport() << "\n" << summary.termination_type << " " << success << endl;
+            
+        // For Dual LiDAR (Vertical/Horizontal LiDAR)
+        // if (bool_dualLiDAR_){
+        if (success){
+            out[0] = params[5];
+            ROS_DEBUG_STREAM("Yaw: Optimized After " << out[0]); 
+            // // if(success & (abs(params[2]) < 1.0)){
+            // if((abs(params[2]) < 1.0)){
+            //     out = params[5];
+            
+            // ROS_DEBUG_STREAM("ZRollPitch: Optimized After " << out[0] << " " << out[1] << " " << out[2]); 
+            // }
+            // else{
+            //     out[0] = t[2];
+            //     out[1] = rpy[0];
+            //     out[2] = rpy[1];
+
+            //     ROS_DEBUG_STREAM("ZRollPitch: NOT Optimized After " << out[0] << " " << out[1] << " " << out[2]); 
+            // }
+        }
+        else{
+            out[0] = rpy[2];
+            ROS_DEBUG_STREAM("Yaw: NOT Optimized After " << out[0]); 
+        }
+
+        // if (success){
+        //     // if(success & (abs(params[2]) < 1.0)){
+        //     if((abs(params[2]) < 1.0)){
+        //         out[0] = params[2];
+        //         out[1] = params[3];
+        //         out[2] = params[4];
+            
+        //     ROS_DEBUG_STREAM("ZRollPitch: Optimized After " << out[0] << " " << out[1] << " " << out[2]); 
+        //     }
+        //     else{
+        //         out[0] = t[2];
+        //         out[1] = rpy[0];
+        //         out[2] = rpy[1];
+
+        //         ROS_DEBUG_STREAM("ZRollPitch: NOT Optimized After " << out[0] << " " << out[1] << " " << out[2]); 
+        //     }
+        // }
             
         
         // }
@@ -896,8 +1213,15 @@ namespace pagslam
             // out.stalks = in_proj.stalkFeatures;
             // out.ground = in_proj.groundFeature;
             
-            if (in_proj.groundFeature.cloud->size() != 0 && in_proj.stalkFeatures.size() != 0){
+            // if (in_proj.groundFeature.cloud->size() != 0 && in_proj.stalkFeatures.size() != 0){
+            //     prevGroundFeatures_.push_back(in_proj.groundFeature);
+            //     firstScan_ = false;
+            // }
+
+            if (in_proj.groundFeature.cloud->size() != 0 && in_proj.stalkFeatures.size() != 0 && in_proj.row1Feature.cloud->size() != 0 && in_proj.row2Feature.cloud->size() != 0){
                 prevGroundFeatures_.push_back(in_proj.groundFeature);
+                prevRow1Features_.push_back(in_proj.row1Feature);
+                prevRow1Features_.push_back(in_proj.row2Feature);
                 firstScan_ = false;
             }
         }
@@ -943,7 +1267,8 @@ namespace pagslam
 
             bool stalkCheck = (in_proj.stalkFeatures.size() > 0) && (stalkMatches.size() >= minStalkMatches_);
             // bool stalkCheck = (in_proj.stalkFeatures.size() > 0);
-            success = TwoStepOptimizePose(in_proj, stalkCheck, stalkMatches, currPoseTf);
+            // success = TwoStepOptimizePose(in_proj, stalkCheck, stalkMatches, currPoseTf);
+            success = ThreeStepOptimizePose(in_proj, stalkCheck, stalkMatches, currPoseTf);
                         
             ROS_DEBUG_STREAM("\n---------- OPTIMIZATION INITIAL OUTPUT -----------------\n"
                        << in_proj.poseEstimate.matrix()
@@ -965,7 +1290,8 @@ namespace pagslam
             // }
             // cout << "2!!!!!!" << in.mapStalkFeatures.size() << " " << in_proj.mapStalkFeatures.size() << endl;
 
-            projectFeatures(currPoseTf, in_final.groundFeature, in_final.stalkFeatures);
+            // projectFeatures(currPoseTf, in_final.groundFeature, in_final.stalkFeatures);
+            projectFeatures(currPoseTf, in_final);
             // cout << "???????????????????????" << endl;
             // for (auto &stalk : in_final.stalkFeatures){
             //     projectStalk(currPoseTf, stalk);
@@ -978,6 +1304,13 @@ namespace pagslam
             // cout << "4!!!!!!" << in.mapStalkFeatures.size() << " " << in_proj.mapStalkFeatures.size() << endl;
 
             prevGroundFeatures_.push_back(in_final.groundFeature);
+            prevRow1Features_.push_back(in_final.row1Feature);
+            prevRow2Features_.push_back(in_final.row2Feature);
+
+            cout << "To NEXT: " << in_final.row1Feature.coefficients->values[0] << " " << 
+            in_final.row1Feature.coefficients->values[1] << " " << 
+            in_final.row1Feature.coefficients->values[2] << " " << 
+            in_final.row1Feature.coefficients->values[3] << endl;
 
             out.matches = matchIndices;
             out.T_Map_Curr = currPoseTf;
@@ -987,4 +1320,126 @@ namespace pagslam
         }
         return success;
     }
+    
+    // bool pagslam::runPagslam(PagslamInput &in, PagslamOutput &out)
+    // {        
+    //     std::vector<int> matchIndices(in.stalkFeatures.size(), -1);  // each element: initialized to -1.
+    //     bool success = true;
+
+    //     PagslamInput in_proj(in);
+    //     PagslamInput in_final(in);
+    //     // PagslamInput in_before_opt(in);
+
+    //     out.T_Map_Curr = in_proj.poseEstimate;
+
+    //     // Matches will be all -1
+    //     out.matches = matchIndices;
+    //     out.stalks = in_proj.stalkFeatures;
+    //     out.ground = in_proj.groundFeature;
+
+    //     if (firstScan_){
+    //         // cout << "======================================" << endl;
+    //         // projectFeatures(in_proj.poseEstimate, in_proj.groundFeature, in_proj.stalkFeatures);
+    //         // prevGroundFeatures_.push_back(in_proj.groundFeature);
+    //         // cout << "======================================" << endl;
+
+    //         // // First run, pose will be same as odom
+    //         // out.T_Map_Curr = in_proj.poseEstimate;
+
+    //         // // Matches will be all -1
+    //         // out.matches = matchIndices;
+    //         // out.stalks = in_proj.stalkFeatures;
+    //         // out.ground = in_proj.groundFeature;
+            
+    //         if (in_proj.groundFeature.cloud->size() != 0 && in_proj.stalkFeatures.size() != 0){
+    //             prevGroundFeatures_.push_back(in_proj.groundFeature);
+    //             firstScan_ = false;
+    //         }
+    //     }
+    //     else{
+    //         // cout << in_proj.groundFeature.cloud->size() << " " << in_proj.stalkFeatures.size() << endl;
+    //         // if (in_proj.groundFeature.cloud->size() == 0 || in_proj.stalkFeatures.size() == 0){
+    //             // ROS_WARN("No ground or landmark models found");
+    //         if (in_proj.stalkFeatures.size() == 0){
+    //             ROS_WARN("Only ground model found");
+    //         }
+            
+    //         if (in_proj.groundFeature.cloud->size() == 0 && in_proj.stalkFeatures.size() == 0){
+    //             ROS_WARN("No ground and landmark models found");
+    //             return false;
+    //         }
+    //         if (!in_proj.mapStalkFeatures.size()){
+    //             ROS_WARN("Not the first scan but map is empty! Ignoring Message");
+
+    //             // // First run, pose will be same as odom
+    //             // out.T_Map_Curr = in_proj.poseEstimate;
+
+    //             // // Matches will be all -1
+    //             // out.matches = matchIndices;
+    //             // out.stalks = in_proj.stalkFeatures;
+    //             // out.ground = in_proj.groundFeature;
+    //             // return true;
+    //             return false;
+    //         }
+    //         ROS_WARN("Run P-AgSLAM");
+
+    //         // cout << "1!!!!!!" << in.mapStalkFeatures.size() << " " << in_proj.mapStalkFeatures.size() << endl;
+
+    //         // matching models
+    //         ROS_DEBUG_STREAM("============== BEFORE OPT =================");
+    //         std::vector<FeatureMatch<StalkFeature::Ptr>> stalkMatches = matchStalks(in_proj.poseEstimate, in_proj.stalkFeatures, in_proj.mapStalkFeatures, stalkMatchThresh_);
+            
+    //         ROS_DEBUG_STREAM("Num Stalk feature matches: " << stalkMatches.size());
+
+    //         // Optimize Pose
+    //         // We do some checks to make sure we have enough information to perform pose estimation
+    //         SE3 T_Delta = SE3();
+    //         SE3 currPoseTf = in_proj.poseEstimate;
+
+    //         bool stalkCheck = (in_proj.stalkFeatures.size() > 0) && (stalkMatches.size() >= minStalkMatches_);
+    //         // bool stalkCheck = (in_proj.stalkFeatures.size() > 0);
+    //         success = TwoStepOptimizePose(in_proj, stalkCheck, stalkMatches, currPoseTf);
+                        
+    //         ROS_DEBUG_STREAM("\n---------- OPTIMIZATION INITIAL OUTPUT -----------------\n"
+    //                    << in_proj.poseEstimate.matrix()
+    //                    << "\n-----------------------------------------------------\n");
+
+    //         ROS_DEBUG_STREAM("\n---------- OPTIMIZATION POSE OUTPUT -----------------\n"
+    //                    << currPoseTf.matrix()
+    //                    << "\n-----------------------------------------------------\n");
+
+    //         ROS_DEBUG_STREAM("============== AFTER OPT =================");
+    //         // projectFeatures(in_proj.poseEstimate, in_before_opt.groundFeature, in_before_opt.stalkFeatures);
+
+    //         // int n = 0;
+    //         // for (auto &stalk : in_before_opt.stalkFeatures){
+    //         //     if (n == 0){
+    //         //         projectStalk(in_proj.poseEstimate, stalk);
+    //         //         n = n + 1;
+    //         //     }
+    //         // }
+    //         // cout << "2!!!!!!" << in.mapStalkFeatures.size() << " " << in_proj.mapStalkFeatures.size() << endl;
+
+    //         projectFeatures(currPoseTf, in_final.groundFeature, in_final.stalkFeatures);
+    //         // cout << "???????????????????????" << endl;
+    //         // for (auto &stalk : in_final.stalkFeatures){
+    //         //     projectStalk(currPoseTf, stalk);
+    //         // }
+
+    //         // cout << "3!!!!!!" << in.mapStalkFeatures.size() << " " << in_proj.mapStalkFeatures.size() << endl;
+
+    //         matchFeatures(in_final.stalkFeatures, in.mapStalkFeatures, matchIndices);
+
+    //         // cout << "4!!!!!!" << in.mapStalkFeatures.size() << " " << in_proj.mapStalkFeatures.size() << endl;
+
+    //         prevGroundFeatures_.push_back(in_final.groundFeature);
+
+    //         out.matches = matchIndices;
+    //         out.T_Map_Curr = currPoseTf;
+    //         out.T_Delta = T_Delta;
+    //         out.ground = in_final.groundFeature;
+    //         out.stalks = in_final.stalkFeatures;
+    //     }
+    //     return success;
+    // }
 }   // namespace pagslam

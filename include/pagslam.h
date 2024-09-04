@@ -21,11 +21,18 @@ struct PagslamInput
     {
         groundFeature.cloud = CloudT::Ptr(new CloudT());
         groundFeature.coefficients = pcl::ModelCoefficients::Ptr(new pcl::ModelCoefficients());
+
+        row1Feature.cloud = CloudT::Ptr(new CloudT());
+        row1Feature.coefficients = pcl::ModelCoefficients::Ptr(new pcl::ModelCoefficients());
+        row2Feature.cloud = CloudT::Ptr(new CloudT());
+        row2Feature.coefficients = pcl::ModelCoefficients::Ptr(new pcl::ModelCoefficients());
     };
 
     SE3 poseEstimate;
     Scalar distance;
     GroundFeature groundFeature;
+    GroundFeature row1Feature;
+    GroundFeature row2Feature;
     std::vector<StalkFeature::Ptr> stalkFeatures = {};
     std::vector<StalkFeature::Ptr> mapStalkFeatures = {};
 
@@ -42,6 +49,22 @@ struct PagslamInput
         // Copy the data from in.groundFeature into the new instances
         *(groundFeature.cloud) = *(other.groundFeature.cloud);
         *(groundFeature.coefficients) = *(other.groundFeature.coefficients);
+
+        // Create new instances of CloudT and pcl::ModelCoefficients
+        row1Feature.cloud = CloudT::Ptr(new CloudT());
+        row1Feature.coefficients = pcl::ModelCoefficients::Ptr(new pcl::ModelCoefficients());
+
+        // Copy the data from in.row1Feature into the new instances
+        *(row1Feature.cloud) = *(other.row1Feature.cloud);
+        *(row1Feature.coefficients) = *(other.row1Feature.coefficients);
+
+        // Create new instances of CloudT and pcl::ModelCoefficients
+        row2Feature.cloud = CloudT::Ptr(new CloudT());
+        row2Feature.coefficients = pcl::ModelCoefficients::Ptr(new pcl::ModelCoefficients());
+
+        // Copy the data from in.row2Feature into the new instances
+        *(row2Feature.cloud) = *(other.row2Feature.cloud);
+        *(row2Feature.coefficients) = *(other.row2Feature.coefficients);
 
         // Copy the stalkFeatures vector
         stalkFeatures.clear();
@@ -77,7 +100,8 @@ namespace pagslam
 
             // std::vector<GroundFeature> getPrevGroundModel();
 
-            void projectFeatures(const SE3 &tf, GroundFeature &ground, std::vector<StalkFeature::Ptr> &stalks);
+            // void projectFeatures(const SE3 &tf, GroundFeature &ground, std::vector<StalkFeature::Ptr> &stalks);
+            void projectFeatures(const SE3 &tf, PagslamInput &in);
             void projectGround(const SE3 &tf, GroundFeature &ground);
             // void projectStalk(const SE3 &tf, StalkFeature::Ptr &stalk);
             // void projectStalk(const SE3 &tf, StalkFeature::Ptr &stalk, bool firstStalk);
@@ -85,7 +109,10 @@ namespace pagslam
             void matchFeatures(const std::vector<StalkFeature::Ptr> &stalkFeatures, const std::vector<StalkFeature::Ptr> &mapStalkFeatures, std::vector<int> &matchIndices);
 
             bool TwoStepOptimizePose(const PagslamInput &in_proj, const bool stalkCheck, const std::vector<FeatureMatch<StalkFeature::Ptr>> &stalkMatches, SE3 &tf);
+            bool ThreeStepOptimizePose(const PagslamInput &in_proj, const bool stalkCheck, const std::vector<FeatureMatch<StalkFeature::Ptr>> &stalkMatches, SE3 &tf);
             void OptimizeXYYaw(const SE3& poseEstimate, const bool optimize, const std::vector<FeatureMatch<StalkFeature::Ptr>> &stalkMatches, double* out);
+            void OptimizeX(const SE3& poseEstimate, const bool optimize, const std::vector<FeatureMatch<StalkFeature::Ptr>> &stalkMatches, double* out);
+            void OptimizeYaw(const SE3& poseEstimate, const GroundFeature &currRow1Feature, const GroundFeature &currRow2Feature, std::vector<GroundFeature> &mapRow1Features, std::vector<GroundFeature> &mapRow2Features, double* out);
             void OptimizeZRollPitch(const SE3& poseEstimate, const GroundFeature &currFeature, std::vector<GroundFeature> &mapFeatures, double* out);
             void printCostCallback(const ceres::IterationSummary& summary);
 
@@ -112,6 +139,8 @@ namespace pagslam
             // bool bool_dualLiDAR_;
 
             std::vector<GroundFeature> prevGroundFeatures_;
+            std::vector<GroundFeature> prevRow1Features_;
+            std::vector<GroundFeature> prevRow2Features_;
             Scalar stalkMatchThresh_;
             Scalar rangeGroundMatch_;
             Scalar AddNewStalkThreshDist_;
