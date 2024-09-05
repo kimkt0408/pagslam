@@ -109,14 +109,18 @@ namespace pagslam
             void matchFeatures(const std::vector<StalkFeature::Ptr> &stalkFeatures, const std::vector<StalkFeature::Ptr> &mapStalkFeatures, std::vector<int> &matchIndices);
 
             bool TwoStepOptimizePose(const PagslamInput &in_proj, const bool stalkCheck, const std::vector<FeatureMatch<StalkFeature::Ptr>> &stalkMatches, SE3 &tf);
-            bool ThreeStepOptimizePose(const PagslamInput &in_proj, const bool stalkCheck, const std::vector<FeatureMatch<StalkFeature::Ptr>> &stalkMatches, SE3 &tf);
+            // bool ThreeStepOptimizePose(const PagslamInput &in_proj, const bool stalkCheck, const std::vector<FeatureMatch<StalkFeature::Ptr>> &stalkMatches, SE3 &tf);
+            bool ThreeStepOptimizePose(const PagslamInput &in_proj, const bool stalkCheck, const std::vector<FeatureMatch<StalkFeature::Ptr>> &stalkMatches, SE3 &tf, Eigen::AngleAxisd rotationAngleAxis);
+            
             void OptimizeXYYaw(const SE3& poseEstimate, const bool optimize, const std::vector<FeatureMatch<StalkFeature::Ptr>> &stalkMatches, double* out);
             void OptimizeX(const SE3& poseEstimate, const bool optimize, const std::vector<FeatureMatch<StalkFeature::Ptr>> &stalkMatches, double* out);
-            void OptimizeYaw(const SE3& poseEstimate, const GroundFeature &currRow1Feature, const GroundFeature &currRow2Feature, std::vector<GroundFeature> &mapRow1Features, std::vector<GroundFeature> &mapRow2Features, double* out);
+            void OptimizeYaw(const SE3& poseEstimate, const GroundFeature &currRow1Feature, const GroundFeature &currRow2Feature, std::vector<GroundFeature> &mapRow1Features, std::vector<GroundFeature> &mapRow2Features, Eigen::AngleAxisd angleAxis, double* out);
             void OptimizeZRollPitch(const SE3& poseEstimate, const GroundFeature &currFeature, std::vector<GroundFeature> &mapFeatures, double* out);
             void printCostCallback(const ceres::IterationSummary& summary);
 
-            bool runPagslam(PagslamInput &in, PagslamOutput &out);
+            // bool runPagslam(PagslamInput &in, PagslamOutput &out);
+            bool runPagslam(PagslamInput &in, PagslamOutput &out, const SE3 initialGuess);
+            
             // bool runPagslam(PagslamInput &in, PagslamOutput &out, const SE3 initialGuess);
             
             std::vector<FeatureMatch<StalkFeature::Ptr>> matchStalks(const SE3 &tf, const std::vector<StalkFeature::Ptr> &currFeatures, std::vector<StalkFeature::Ptr> &mapFeatures, const Scalar distThresh);

@@ -1479,8 +1479,8 @@ namespace pagslam
         visualization_msgs::MarkerArray viz_stalkVector_before = mapCloudVisualization2(in_tmp.stalkFeatures, 0);
         pubMapCloudMarkerBefore_.publish(viz_stalkVector_before);
 
-        bool success = runPagslam(pagslamIn, pagslamOut);
-        // bool success = runPagslam(pagslamIn, pagslamOut, initialGuess);
+        // bool success = runPagslam(pagslamIn, pagslamOut);
+        bool success = runPagslam(pagslamIn, pagslamOut, initialGuess);
 
         visualization_msgs::MarkerArray viz_stalkVector_after = mapCloudVisualization2(pagslamOut.stalks, 1);
         pubMapCloudMarkerAfter_.publish(viz_stalkVector_after);

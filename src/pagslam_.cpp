@@ -450,10 +450,15 @@ namespace pagslam
         return true;
     }
     
+    // bool pagslam::ThreeStepOptimizePose(const PagslamInput &in_proj, 
+    //     const bool stalkCheck, 
+    //     const std::vector<FeatureMatch<StalkFeature::Ptr>> &stalkMatches,
+    //     SE3 &tf)
     bool pagslam::ThreeStepOptimizePose(const PagslamInput &in_proj, 
         const bool stalkCheck, 
         const std::vector<FeatureMatch<StalkFeature::Ptr>> &stalkMatches,
-        SE3 &tf)
+        SE3 &tf,
+        Eigen::AngleAxisd rotationAngleAxis)
     {
         double stalkOut[1];
         // double stalkOut[3];
@@ -467,7 +472,7 @@ namespace pagslam
         OptimizeX(in_proj.poseEstimate, stalkCheck, stalkMatches, stalkOut);
         
         // (2) Ground feature optimization
-        OptimizeYaw(in_proj.poseEstimate, in_proj.row1Feature, in_proj.row2Feature, prevRow1Features_, prevRow2Features_, rowOut);
+        OptimizeYaw(in_proj.poseEstimate, in_proj.row1Feature, in_proj.row2Feature, prevRow1Features_, prevRow2Features_, rotationAngleAxis, rowOut);
         
         // (2) Ground feature optimization
         OptimizeZRollPitch(in_proj.poseEstimate, in_proj.groundFeature, prevGroundFeatures_, groundOut);
@@ -931,8 +936,8 @@ namespace pagslam
         options.parameter_tolerance = 1e-10;  // Adjust this value as needed.            
         options.max_num_iterations = maxNumIterations_;
 
-        options.linear_solver_type = ceres::DENSE_QR;
-        // options.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;
+        // options.linear_solver_type = ceres::DENSE_QR;
+        options.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;
         // options.logging_type = ceres::SILENT;
         // options.logging_type = ceres::PER_MINIMIZER_ITERATION;
 
@@ -984,7 +989,7 @@ namespace pagslam
     }
     
 
-    void pagslam::OptimizeYaw(const SE3& poseEstimate, const GroundFeature &currRow1Feature, const GroundFeature &currRow2Feature, std::vector<GroundFeature> &mapRow1Features, std::vector<GroundFeature> &mapRow2Features, double* out){
+    void pagslam::OptimizeYaw(const SE3& poseEstimate, const GroundFeature &currRow1Feature, const GroundFeature &currRow2Feature, std::vector<GroundFeature> &mapRow1Features, std::vector<GroundFeature> &mapRow2Features, Eigen::AngleAxisd angleAxis, double* out){
         auto t = poseEstimate.translation();
         auto q = poseEstimate.unit_quaternion();
         double quat[4] = {q.w(), q.x(), q.y(), q.z()};
@@ -996,6 +1001,11 @@ namespace pagslam
         ROS_DEBUG_STREAM("Yaw Before " << rpy[2]); 
         // cout << "ZRollPitch Before " << params[2] << " " << params[3] << " " << params[4] << endl;; 
         bool success = true;
+
+        // if (angleAxis.angle() > M_PI / 4){
+        //     cout << "Too large rotation..." << endl;
+        //     success = false;            
+        // }
 
         ceres::LossFunction *loss = NULL;
         loss = new ceres::HuberLoss(huberLossThresh_);
@@ -1017,9 +1027,19 @@ namespace pagslam
         cout << "CURR: " << scene_coeff << endl;
         cout << "PREV: " << model_coeff << endl;
         double weight = 1; 
-        ceres::CostFunction* cost =
-                        new ceres::AutoDiffCostFunction<YawRowCost, 1, 6>(
-                            new YawRowCost(scene_coeff, model_coeff, weight));
+        ceres::CostFunction* cost;
+        double rotation_angle = angleAxis.angle();
+
+        if (rotation_angle > M_PI / 4){
+            cost = new ceres::AutoDiffCostFunction<YawRowCost2, 1, 6>(
+                        new YawRowCost2(scene_coeff, model_coeff, rotation_angle, weight));
+        }
+        else{
+            cost = new ceres::AutoDiffCostFunction<YawRowCost1, 1, 6>(
+                            new YawRowCost1(scene_coeff, model_coeff, weight));
+        }
+
+
         problem.AddResidualBlock(cost, loss, params);
         // cout << "**************" << scene_coeff << endl;
         // if (abs(scene_coeff[2]) < 0.9){
@@ -1076,8 +1096,8 @@ namespace pagslam
         options.parameter_tolerance = 1e-10;  // Adjust this value as needed.            
         options.max_num_iterations = maxNumIterations_;
 
-        options.linear_solver_type = ceres::DENSE_QR;
-        // options.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;
+        // options.linear_solver_type = ceres::DENSE_QR;
+        options.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;
         // options.logging_type = ceres::SILENT;
         // options.logging_type = ceres::PER_MINIMIZER_ITERATION;
 
@@ -1092,8 +1112,17 @@ namespace pagslam
         // For Dual LiDAR (Vertical/Horizontal LiDAR)
         // if (bool_dualLiDAR_){
         if (success){
-            out[0] = params[5];
-            ROS_DEBUG_STREAM("Yaw: Optimized After " << out[0]); 
+            if (abs(params[5]-rpy[2]) > 0.25 * M_PI){
+                out[0] = rpy[2];
+                ROS_DEBUG_STREAM("Yaw: NOT Optimized After " << out[0]); 
+            }
+            else{   
+                out[0] = params[5];
+                ROS_DEBUG_STREAM("Yaw: Optimized After " << out[0]); 
+
+            }
+            // out[0] = params[5];
+            // ROS_DEBUG_STREAM("Yaw: Optimized After " << out[0]); 
             // // if(success & (abs(params[2]) < 1.0)){
             // if((abs(params[2]) < 1.0)){
             //     out = params[5];
@@ -1193,7 +1222,8 @@ namespace pagslam
     }
 
 
-    bool pagslam::runPagslam(PagslamInput &in, PagslamOutput &out)
+    // bool pagslam::runPagslam(PagslamInput &in, PagslamOutput &out)
+    bool pagslam::runPagslam(PagslamInput &in, PagslamOutput &out, const SE3 initialGuess)
     {        
         std::vector<int> matchIndices(in.stalkFeatures.size(), -1);  // each element: initialized to -1.
         bool success = true;
@@ -1259,6 +1289,8 @@ namespace pagslam
                 // return true;
                 return false;
             }
+            Eigen::AngleAxisd rotationAngleAxis(initialGuess.rotationMatrix());
+            
             ROS_WARN("Run P-AgSLAM");
 
             // cout << "1!!!!!!" << in.mapStalkFeatures.size() << " " << in_proj.mapStalkFeatures.size() << endl;
@@ -1277,7 +1309,8 @@ namespace pagslam
             bool stalkCheck = (in_proj.stalkFeatures.size() > 0) && (stalkMatches.size() >= minStalkMatches_);
             // bool stalkCheck = (in_proj.stalkFeatures.size() > 0);
             // success = TwoStepOptimizePose(in_proj, stalkCheck, stalkMatches, currPoseTf);
-            success = ThreeStepOptimizePose(in_proj, stalkCheck, stalkMatches, currPoseTf);
+            // success = ThreeStepOptimizePose(in_proj, stalkCheck, stalkMatches, currPoseTf);
+            success = ThreeStepOptimizePose(in_proj, stalkCheck, stalkMatches, currPoseTf, rotationAngleAxis);
                         
             ROS_DEBUG_STREAM("\n---------- OPTIMIZATION INITIAL OUTPUT -----------------\n"
                        << in_proj.poseEstimate.matrix()
@@ -1311,15 +1344,14 @@ namespace pagslam
             matchFeatures(in_final.stalkFeatures, in.mapStalkFeatures, matchIndices);
 
             // cout << "4!!!!!!" << in.mapStalkFeatures.size() << " " << in_proj.mapStalkFeatures.size() << endl;
-
-            prevGroundFeatures_.push_back(in_final.groundFeature);
-            prevRow1Features_.push_back(in_final.row1Feature);
-            prevRow2Features_.push_back(in_final.row2Feature);
-
             cout << "To NEXT: " << in_final.row1Feature.coefficients->values[0] << " " << 
             in_final.row1Feature.coefficients->values[1] << " " << 
             in_final.row1Feature.coefficients->values[2] << " " << 
             in_final.row1Feature.coefficients->values[3] << endl;
+            
+            prevGroundFeatures_.push_back(in_final.groundFeature);
+            prevRow1Features_.push_back(in_final.row1Feature);
+            prevRow2Features_.push_back(in_final.row2Feature);            
 
             out.matches = matchIndices;
             out.T_Map_Curr = currPoseTf;

@@ -110,7 +110,7 @@ InputManager::InputManager(ros::NodeHandle nh) : nh_(nh), tf_listener_{tf_buffer
     // nh_.param<float>("max_time_difference", maxTimeDifference_, 0.05); //0.05
     
     // Test: 2024-08
-    nh_.param<float>("min_odom_distance", minOdomDistance_, 0.01); //0.05
+    nh_.param<float>("min_odom_distance", minOdomDistance_, 0.2); //0.05
     nh_.param<float>("max_time_difference", maxTimeDifference_, 0.2); //0.05
 
     odomFreqFilter_ = nh_.param("odom_freq_filter", 1);
@@ -229,7 +229,7 @@ bool InputManager::Run()
         auto odom = odomQueue_[i];
         // Use odom to estimate motion since last key frame
         SE3 currRelativeMotion = latestOdom.pose.inverse() * odom.pose;
-
+        
         if (firstOdom_){
             ROS_DEBUG_STREAM("First pagslam call");
             if (callPAGSLAM(currRelativeMotion, odom)){
@@ -246,6 +246,25 @@ bool InputManager::Run()
             double accumMovement = currRelativeMotion.translation().norm();
             if (accumMovement > minOdomDistance_){
                 ROS_DEBUG_STREAM("Pagslam call" << accumMovement);
+
+                // Option 1: Print rotation matrix
+                Eigen::Matrix3d rotationMatrix = currRelativeMotion.rotationMatrix();
+                std::cout << "Rotation matrix: \n" << rotationMatrix << std::endl;
+
+                // Option 2: Print rotation as quaternion
+                Eigen::Quaterniond rotationQuaternion = currRelativeMotion.unit_quaternion();
+                std::cout << "Rotation as quaternion: \n" 
+                        << "w: " << rotationQuaternion.w() << ", "
+                        << "x: " << rotationQuaternion.x() << ", "
+                        << "y: " << rotationQuaternion.y() << ", "
+                        << "z: " << rotationQuaternion.z() << std::endl;
+
+                // Option 3: Print rotation as angle-axis
+                Eigen::AngleAxisd angleAxis(currRelativeMotion.rotationMatrix());
+                std::cout << "Rotation in angle-axis form: \n"
+                        << "Angle (radians): " << angleAxis.angle() << "\n"
+                        << "Axis: " << angleAxis.axis().transpose() << std::endl;
+                
                 int k = 0;
                 if (callPAGSLAM(currRelativeMotion, odom)){
                     latestOdom.pose = odom.pose;

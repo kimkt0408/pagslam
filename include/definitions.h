@@ -339,12 +339,78 @@ struct ZRollPitchGroundCost {
     }
 };
 
-struct YawRowCost {
+// struct YawRowCost {
+//     Vector4 scene_coeff;  // Scene plane coefficients
+//     Vector4 model_coeff;  // Model plane coefficients
+//     double weight;        // Weight for the cost function
+
+//     YawRowCost(Vector4 scene_coeff, Vector4 model_coeff, double weight)
+//         : scene_coeff(scene_coeff), model_coeff(model_coeff), weight(weight) {}
+    
+//     template <typename T>
+//     bool operator()(const T* const params, T* residuals) const
+//     {
+//         // Extract the rotation parameters (angle-axis representation)
+//         T r_last_curr[3] = {params[3], params[4], params[5]}; // Rotation as angle axis
+//         Eigen::Matrix<T, 3, 1> t_last_curr{params[0], params[1], params[2]}; // Translation (not used for normal alignment)
+
+//         // Normal vector of the scene plane
+//         Eigen::Matrix<T, 3, 1> scene_normal{T(scene_coeff[0]), T(scene_coeff[1]), T(scene_coeff[2])};
+//         scene_normal.normalize(); // Normalize to ensure it's a unit vector
+
+//         // Normal vector of the model plane
+//         Eigen::Matrix<T, 3, 1> model_normal{T(model_coeff[0]), T(model_coeff[1]), T(model_coeff[2])};
+//         model_normal.normalize(); // Normalize to ensure it's a unit vector
+
+//         // Use a separate vector to store the rotated normal
+//         Eigen::Matrix<T, 3, 1> rotated_scene_normal;
+
+//         // Rotate the model normal using the rotation parameters
+//         ceres::AngleAxisRotatePoint(r_last_curr, scene_normal.data(), rotated_scene_normal.data());
+
+//         // Normalize the transformed normal
+//         rotated_scene_normal.normalize();
+
+//         // // Compute the alignment error between the normals using dot product
+//         // T dot_product = scene_normal.dot(rotated_model_normal);
+
+//         // // The residual is minimized when the dot product is 1 (normals are aligned)
+//         // residuals[0] = T(weight) * (T(1.0) - dot_product); // Minimizing this residual aligns the normals
+
+//         T rotated_scene_yaw = ceres::atan2(rotated_scene_normal[1], rotated_scene_normal[0]);
+//         T model_yaw = ceres::atan2(model_normal[1], model_normal[0]);
+        
+//         // T angle_diff = rotated_scene_yaw - model_yaw;
+//         // if (angle_diff > M_PI) {
+//         //     angle_diff -= T(2.0 * M_PI);
+//         // } else if (angle_diff < -M_PI) {
+//         //     angle_diff += T(2.0 * M_PI);
+//         // }
+//         // residuals[0] = T(weight) * ceres::abs(angle_diff);
+
+//         // Compute the angle difference in the range [-pi, pi]
+//         T angle_diff = rotated_scene_yaw - model_yaw;
+
+//         // Adjust the angle difference to be within the range [-pi, pi]
+//         if (angle_diff > T(M_PI)) {
+//             angle_diff -= T(2.0 * M_PI);
+//         } else if (angle_diff < -T(M_PI)) {
+//             angle_diff += T(2.0 * M_PI);
+//         }
+
+//         // Set the residual to the absolute angle difference
+//         residuals[0] = T(weight) * ceres::abs(angle_diff);
+
+//         return true;
+//     }
+// };
+
+struct YawRowCost1 {
     Vector4 scene_coeff;  // Scene plane coefficients
     Vector4 model_coeff;  // Model plane coefficients
     double weight;        // Weight for the cost function
 
-    YawRowCost(Vector4 scene_coeff, Vector4 model_coeff, double weight)
+    YawRowCost1(Vector4 scene_coeff, Vector4 model_coeff, double weight)
         : scene_coeff(scene_coeff), model_coeff(model_coeff), weight(weight) {}
     
     template <typename T>
@@ -380,18 +446,95 @@ struct YawRowCost {
         T rotated_scene_yaw = ceres::atan2(rotated_scene_normal[1], rotated_scene_normal[0]);
         T model_yaw = ceres::atan2(model_normal[1], model_normal[0]);
         
-        T angle_diff = rotated_scene_yaw - model_yaw;
-        if (angle_diff > M_PI) {
+        cout << "Yaw Optimizing: scene / model: " << rotated_scene_yaw << " " << model_yaw << endl;
+        // T angle_diff = rotated_scene_yaw - model_yaw;
+        // if (angle_diff > M_PI) {
+        //     angle_diff -= T(2.0 * M_PI);
+        // } else if (angle_diff < -M_PI) {
+        //     angle_diff += T(2.0 * M_PI);
+        // }
+        // residuals[0] = T(weight) * ceres::abs(angle_diff);
+
+        // Compute the angle difference in the range [-pi, pi]
+        T angle_diff = ceres::abs(rotated_scene_yaw - model_yaw);
+
+        // Adjust the angle difference to be within the range [-pi, pi]
+        if (angle_diff > T(2.0 * M_PI)) {
             angle_diff -= T(2.0 * M_PI);
-        } else if (angle_diff < -M_PI) {
-            angle_diff += T(2.0 * M_PI);
         }
+
+        // Set the residual to the absolute angle difference
         residuals[0] = T(weight) * ceres::abs(angle_diff);
 
         return true;
     }
 };
 
+struct YawRowCost2 {
+    Vector4 scene_coeff;  // Scene plane coefficients
+    Vector4 model_coeff;  // Model plane coefficients
+    double rotation_angle; // Rotational angle between keyframes
+    double weight;        // Weight for the cost function
+
+    YawRowCost2(Vector4 scene_coeff, Vector4 model_coeff, double rotation_angle, double weight)
+        : scene_coeff(scene_coeff), model_coeff(model_coeff), rotation_angle(rotation_angle), weight(weight) {}
+    
+    template <typename T>
+    bool operator()(const T* const params, T* residuals) const
+    {
+        // Extract the rotation parameters (angle-axis representation)
+        T r_last_curr[3] = {params[3], params[4], params[5]}; // Rotation as angle axis
+        Eigen::Matrix<T, 3, 1> t_last_curr{params[0], params[1], params[2]}; // Translation (not used for normal alignment)
+
+        // Normal vector of the scene plane
+        Eigen::Matrix<T, 3, 1> scene_normal{T(scene_coeff[0]), T(scene_coeff[1]), T(scene_coeff[2])};
+        scene_normal.normalize(); // Normalize to ensure it's a unit vector
+
+        // Normal vector of the model plane
+        Eigen::Matrix<T, 3, 1> model_normal{T(model_coeff[0]), T(model_coeff[1]), T(model_coeff[2])};
+        model_normal.normalize(); // Normalize to ensure it's a unit vector
+
+        // Use a separate vector to store the rotated normal
+        Eigen::Matrix<T, 3, 1> rotated_scene_normal;
+
+        // Rotate the model normal using the rotation parameters
+        ceres::AngleAxisRotatePoint(r_last_curr, scene_normal.data(), rotated_scene_normal.data());
+
+        // Normalize the transformed normal
+        rotated_scene_normal.normalize();
+
+        // // Compute the alignment error between the normals using dot product
+        // T dot_product = scene_normal.dot(rotated_model_normal);
+
+        // // The residual is minimized when the dot product is 1 (normals are aligned)
+        // residuals[0] = T(weight) * (T(1.0) - dot_product); // Minimizing this residual aligns the normals
+
+        T rotated_scene_yaw = ceres::atan2(rotated_scene_normal[1], rotated_scene_normal[0]);
+        T model_yaw = ceres::atan2(model_normal[1], model_normal[0]);
+        
+        cout << "Yaw Optimizing: scene / model: " << rotated_scene_yaw << " " << model_yaw << endl;
+        // T angle_diff = rotated_scene_yaw - model_yaw;
+        // if (angle_diff > M_PI) {
+        //     angle_diff -= T(2.0 * M_PI);
+        // } else if (angle_diff < -M_PI) {
+        //     angle_diff += T(2.0 * M_PI);
+        // }
+        // residuals[0] = T(weight) * ceres::abs(angle_diff);
+
+        // Compute the angle difference in the range [-pi, pi]
+        T angle_diff = ceres::abs((rotated_scene_yaw + rotation_angle) - model_yaw);
+
+        // Adjust the angle difference to be within the range [-pi, pi]
+        if (angle_diff > T(2.0 * M_PI)) {
+            angle_diff -= T(2.0 * M_PI);
+        }
+
+        // Set the residual to the absolute angle difference
+        residuals[0] = T(weight) * ceres::abs(angle_diff);
+
+        return true;
+    }
+};
 
 // struct ZRollPitchGroundCost {
 //     Vector3 scene_point;
