@@ -337,7 +337,11 @@ int InputManager::FindPC(const ros::Time stamp, CloudT::Ptr h_cloud, CloudT::Ptr
     while (!h_pcQueue_.empty() && !v_pcQueue_.empty()){
         // ROS_DEBUG_STREAM("!!!!!!:\n h_cloud: " << (h_pcQueue_.front()->header.stamp.toSec()-stamp.toSec()) << "\n v_cloud: " << (v_pcQueue_.front()->header.stamp.toSec()-stamp.toSec()) << "\n odom:" << stamp.toSec());
                        
-        if (h_pcQueue_.front()->header.stamp.toSec() < stamp.toSec() - maxTimeDifference_){
+        // if (h_pcQueue_.front()->header.stamp.toSec() < stamp.toSec() - maxTimeDifference_){
+        //     // ROS_DEBUG_STREAM("H_PCLOUD MSG TOO OLD");
+        //     h_pcQueue_.pop();
+        // }
+        if (h_pcQueue_.front()->header.stamp.toSec() < stamp.toSec()){
             // ROS_DEBUG_STREAM("H_PCLOUD MSG TOO OLD");
             h_pcQueue_.pop();
         }
@@ -346,7 +350,11 @@ int InputManager::FindPC(const ros::Time stamp, CloudT::Ptr h_cloud, CloudT::Ptr
             return CLOUD_TOO_NEW;
         }
         else{
-            if (v_pcQueue_.front()->header.stamp.toSec() < stamp.toSec() - maxTimeDifference_){
+            // if (v_pcQueue_.front()->header.stamp.toSec() < stamp.toSec() - maxTimeDifference_){
+            //     // ROS_DEBUG_STREAM("V_PCLOUD MSG TOO OLD");
+            //     v_pcQueue_.pop();
+            // }
+            if (v_pcQueue_.front()->header.stamp.toSec() < stamp.toSec()){
                 // ROS_DEBUG_STREAM("V_PCLOUD MSG TOO OLD");
                 v_pcQueue_.pop();
             }
