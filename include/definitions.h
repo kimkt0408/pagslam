@@ -446,6 +446,14 @@ struct YawRowCost1 {
         T rotated_scene_yaw = ceres::atan2(rotated_scene_normal[1], rotated_scene_normal[0]);
         T model_yaw = ceres::atan2(model_normal[1], model_normal[0]);
         cout << "Yaw Optimizing: scene / model: " << scene_yaw << " " << rotated_scene_yaw << " " << model_yaw << endl;
+        
+        if (rotated_scene_yaw < 0.0){
+            rotated_scene_yaw += M_PI;
+        }
+        if (model_yaw < 0.0){
+            model_yaw += M_PI;
+        }
+        
         // T angle_diff = rotated_scene_yaw - model_yaw;
         // if (angle_diff > M_PI) {
         //     angle_diff -= T(2.0 * M_PI);
@@ -511,6 +519,12 @@ struct YawRowCost2 {
         T rotated_scene_yaw = ceres::atan2(rotated_scene_normal[1], rotated_scene_normal[0]);
         T model_yaw = ceres::atan2(model_normal[1], model_normal[0]);
         
+        if (rotated_scene_yaw < 0.0){
+            rotated_scene_yaw += M_PI;
+        }
+        if (model_yaw < 0.0){
+            model_yaw += M_PI;
+        }
         // T angle_diff = rotated_scene_yaw - model_yaw;
         // if (angle_diff > M_PI) {
         //     angle_diff -= T(2.0 * M_PI);
@@ -524,9 +538,13 @@ struct YawRowCost2 {
         T angle_diff = ceres::abs((rotated_scene_yaw + 0.5 * M_PI) - model_yaw);
 
         // Adjust the angle difference to be within the range [-pi, pi]
-        if (angle_diff > T(2.0 * M_PI)) {
-            angle_diff -= T(2.0 * M_PI);
+        if (angle_diff > T( M_PI)){
+            angle_diff -= T(M_PI);
         }
+
+        // if (angle_diff > T(2.0 * M_PI)) {
+        //     angle_diff -= T(2.0 * M_PI);
+        // }
 
         cout << "Large rotation..." << angle_diff << " " << rotation_angle << 
         " " << params[3] << " " << params[4] << " " << params[5] << endl;
