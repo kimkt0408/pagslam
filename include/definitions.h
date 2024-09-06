@@ -520,7 +520,8 @@ struct YawRowCost2 {
         // residuals[0] = T(weight) * ceres::abs(angle_diff);
 
         // Compute the angle difference in the range [-pi, pi]
-        T angle_diff = ceres::abs((rotated_scene_yaw + rotation_angle) - model_yaw);
+        // T angle_diff = ceres::abs((rotated_scene_yaw + rotation_angle) - model_yaw);
+        T angle_diff = ceres::abs((rotated_scene_yaw + 0.5 * M_PI) - model_yaw);
 
         // Adjust the angle difference to be within the range [-pi, pi]
         if (angle_diff > T(2.0 * M_PI)) {

@@ -440,8 +440,8 @@ namespace ext
         geometry_msgs::Transform transform2 = SE3ToTransform(initialGuess);
         
         // geometry_msgs::Transform transform = multiplyTransforms(transform2, transform1);
-        geometry_msgs::Transform transform = multiplyTransforms(transform1, transform2);
-        // geometry_msgs::Transform transform = transform1;
+        // geometry_msgs::Transform transform = multiplyTransforms(transform1, transform2);
+        geometry_msgs::Transform transform = transform1;
 
         // (1) Point Cloud
         pcl_ros::transformPointCloud(*row1Cloud, *tfm_row1Cloud, transform);
