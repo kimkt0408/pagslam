@@ -1433,7 +1433,8 @@ namespace pagslam
                 std::cout << "Bin: " << localMaxima[i].first << ", Count: " << localMaxima[i].second << ", Y-Value: " << yValue << std::endl;
                 
                 // Store the y-range for this local maximum
-                twoRowsYRange.push_back({yValue - 0.15f, yValue + 0.15f});
+                // twoRowsYRange.push_back({yValue - 0.15f, yValue + 0.15f});
+                twoRowsYRange.push_back({yValue - 0.1f, yValue + 0.1f});
                 // std::cout << "Bin: " << localMaxima[i].first << ", Y value: " << (minY + localMaxima[i].first * binWidth) - 0.2 << " " << (minY + localMaxima[i].first * binWidth) + 0.2 <<  ", Count: " << localMaxima[i].second << std::endl;
             }
         } 
@@ -1546,8 +1547,8 @@ namespace pagslam
                 visualization_msgs::MarkerArray tMarkerArray = trajectoryVisualization(trajectory_, 1);
                 pubTrajectory_.publish(tMarkerArray);
 
-                // visualization_msgs::MarkerArray viz_mapTotalCloud = stalkCloudClustersVisualization(mapCloud_);
-                // pubMapTotalCloud_.publish(viz_mapTotalCloud);
+                visualization_msgs::MarkerArray viz_mapTotalCloud = stalkCloudClustersVisualization(mapCloud_);
+                pubMapTotalCloud_.publish(viz_mapTotalCloud);
 
                 visualization_msgs::MarkerArray viz_stalkVector = mapCloudVisualization(pagslamIn.mapStalkFeatures);
 
