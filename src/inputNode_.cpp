@@ -110,7 +110,7 @@ InputManager::InputManager(ros::NodeHandle nh) : nh_(nh), tf_listener_{tf_buffer
     // nh_.param<float>("max_time_difference", maxTimeDifference_, 0.05); //0.05
     
     // Test: 2024-08
-    nh_.param<float>("min_odom_distance", minOdomDistance_, 0.15); //0.05
+    nh_.param<float>("min_odom_distance", minOdomDistance_, 0.2); //0.05
     nh_.param<float>("max_time_difference", maxTimeDifference_, 0.2); //0.05
 
     odomFreqFilter_ = nh_.param("odom_freq_filter", 1);
@@ -337,27 +337,27 @@ int InputManager::FindPC(const ros::Time stamp, CloudT::Ptr h_cloud, CloudT::Ptr
     while (!h_pcQueue_.empty() && !v_pcQueue_.empty()){
         // ROS_DEBUG_STREAM("!!!!!!:\n h_cloud: " << (h_pcQueue_.front()->header.stamp.toSec()-stamp.toSec()) << "\n v_cloud: " << (v_pcQueue_.front()->header.stamp.toSec()-stamp.toSec()) << "\n odom:" << stamp.toSec());
                        
-        // if (h_pcQueue_.front()->header.stamp.toSec() < stamp.toSec() - maxTimeDifference_){
-        //     // ROS_DEBUG_STREAM("H_PCLOUD MSG TOO OLD");
-        //     h_pcQueue_.pop();
-        // }
-        if (h_pcQueue_.front()->header.stamp.toSec() < stamp.toSec()){
+        if (h_pcQueue_.front()->header.stamp.toSec() < stamp.toSec() - maxTimeDifference_){
             // ROS_DEBUG_STREAM("H_PCLOUD MSG TOO OLD");
             h_pcQueue_.pop();
         }
+        // if (h_pcQueue_.front()->header.stamp.toSec() < stamp.toSec()){
+        //     // ROS_DEBUG_STREAM("H_PCLOUD MSG TOO OLD");
+        //     h_pcQueue_.pop();
+        // }
         else if (h_pcQueue_.front()->header.stamp.toSec() > stamp.toSec() + maxTimeDifference_){
             // ROS_DEBUG_STREAM("H_PCLOUD MSG TOO NEW");
             return CLOUD_TOO_NEW;
         }
         else{
-            // if (v_pcQueue_.front()->header.stamp.toSec() < stamp.toSec() - maxTimeDifference_){
-            //     // ROS_DEBUG_STREAM("V_PCLOUD MSG TOO OLD");
-            //     v_pcQueue_.pop();
-            // }
-            if (v_pcQueue_.front()->header.stamp.toSec() < stamp.toSec()){
+            if (v_pcQueue_.front()->header.stamp.toSec() < stamp.toSec() - maxTimeDifference_){
                 // ROS_DEBUG_STREAM("V_PCLOUD MSG TOO OLD");
                 v_pcQueue_.pop();
             }
+            // if (v_pcQueue_.front()->header.stamp.toSec() < stamp.toSec()){
+            //     // ROS_DEBUG_STREAM("V_PCLOUD MSG TOO OLD");
+            //     v_pcQueue_.pop();
+            // }
             else if (v_pcQueue_.front()->header.stamp.toSec() > stamp.toSec() + maxTimeDifference_){
                 // ROS_DEBUG_STREAM("V_PCLOUD MSG TOO NEW");
                 return CLOUD_TOO_NEW;

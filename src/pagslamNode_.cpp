@@ -1434,7 +1434,7 @@ namespace pagslam
                 
                 // Store the y-range for this local maximum
                 // twoRowsYRange.push_back({yValue - 0.15f, yValue + 0.15f});
-                twoRowsYRange.push_back({yValue - 0.1f, yValue + 0.1f});
+                twoRowsYRange.push_back({yValue - 0.15f, yValue + 0.15f});
                 // std::cout << "Bin: " << localMaxima[i].first << ", Y value: " << (minY + localMaxima[i].first * binWidth) - 0.2 << " " << (minY + localMaxima[i].first * binWidth) + 0.2 <<  ", Count: " << localMaxima[i].second << std::endl;
             }
         } 
