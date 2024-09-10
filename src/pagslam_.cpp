@@ -38,7 +38,7 @@ namespace pagslam
         // huberLossThresh_ = 1; // 0.1
 
         // TEST
-        stalkMatchThresh_ = 0.08;  // 0.12 // 0.3 
+        stalkMatchThresh_ = 0.06;  // 0.12 // 0.3 
         minStalkMatches_ = 2; //2;
         rangeGroundMatch_ = 3; // 4
         AddNewStalkThreshDist_ = 0.5*stalkMatchThresh_;
