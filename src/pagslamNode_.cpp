@@ -1385,7 +1385,12 @@ namespace pagslam
         PagslamOutput pagslamOut = PagslamOutput();
 
         SE3 poseEstimate = prevKeyPose * initialGuess;
-        SE3 originalPoseEstimate = odom.pose;
+
+        SE3 initialPose;
+        Eigen::Vector3d translation(0, 0, 0);
+        Eigen::Quaterniond rotation(Eigen::AngleAxisd(float(0 * (M_PI / 180)), Eigen::Vector3d::UnitZ())); // 90 degrees around Z axis
+        initialPose = SE3(rotation, translation);
+        SE3 originalPoseEstimate = initialPose * odom.pose;
 
         pagslamIn.poseEstimate = poseEstimate;
         pagslamIn.distance = initialGuess.translation().norm();
