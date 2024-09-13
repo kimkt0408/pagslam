@@ -152,5 +152,8 @@ namespace pagslam
             int minDbscanPts_;   // minimum number of points in a cluster            
               
             GroundFeature prev_ground_;
+
+            float firstOdomOrientation_;
+            int minRowInliers_;
     };
 }

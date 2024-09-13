@@ -110,8 +110,8 @@ InputManager::InputManager(ros::NodeHandle nh) : nh_(nh), tf_listener_{tf_buffer
     // nh_.param<float>("max_time_difference", maxTimeDifference_, 0.05); //0.05
     
     // Test: 2024-08
-    nh_.param<float>("min_odom_distance", minOdomDistance_, 0.2); //0.05
-    nh_.param<float>("max_time_difference", maxTimeDifference_, 0.2); //0.05
+    nh_.param<float>("min_odom_distance", minOdomDistance_, 0.1); //0.05
+    nh_.param<float>("max_time_difference", maxTimeDifference_, 0.05); //0.05
 
     odomFreqFilter_ = nh_.param("odom_freq_filter", 1);
 
@@ -121,7 +121,7 @@ InputManager::InputManager(ros::NodeHandle nh) : nh_(nh), tf_listener_{tf_buffer
 
     publishTf_ = nh_.param("publish_tf", true);
 
-    nh_.param<float>("first_odom_orientation", firstOdomOrientation_, 0 * (M_PI / 180)); //0.1, 0.05
+    nh_.param<float>("first_odom_orientation", firstOdomOrientation_, 90 * (M_PI / 180)); //0.1, 0.05
 
     nh_.param<std::string>("robot_frame_id", robot_frame_id_, "base_link");
     nh_.param<std::string>("odom_frame_id", odom_frame_id_, "odom");
@@ -155,6 +155,35 @@ InputManager::InputManager(ros::NodeHandle nh) : nh_(nh), tf_listener_{tf_buffer
 
 
 // Odometry Callback function
+// void InputManager::OdomCb_(const nav_msgs::OdometryConstPtr &odom_msg)
+// {   
+//     // ROS_DEBUG_STREAM("OdomCb_ running in thread: " << std::this_thread::get_id());
+
+//     // Count the number of subscribed odometry data
+//     odomCounter_++;
+//     if (odomCounter_ % odomFreqFilter_ != 0){
+//         return;
+//     }
+//     odomCounter_ = 0;
+
+//     auto pose = odom_msg->pose.pose;
+
+//     ros::Time odomStamp = odom_msg->header.stamp;
+//     Quat rot(pose.orientation.w, pose.orientation.x,
+//              pose.orientation.y, pose.orientation.z);
+//     Vector3 pos(pose.position.x, pose.position.y, pose.position.z);
+
+//     SE3 odom = SE3();
+//     odom.setQuaternion(rot);
+//     odom.translation() = pos;
+
+//     // Add odom into odom queue
+//     odomQueue_.emplace_back(odom, odomStamp);
+//     if (odomQueue_.size() > 10 * maxQueueSize_){
+//         odomQueue_.pop_front();
+//     }
+// }
+
 void InputManager::OdomCb_(const nav_msgs::OdometryConstPtr &odom_msg)
 {   
     // ROS_DEBUG_STREAM("OdomCb_ running in thread: " << std::this_thread::get_id());
@@ -172,6 +201,19 @@ void InputManager::OdomCb_(const nav_msgs::OdometryConstPtr &odom_msg)
     Quat rot(pose.orientation.w, pose.orientation.x,
              pose.orientation.y, pose.orientation.z);
     Vector3 pos(pose.position.x, pose.position.y, pose.position.z);
+
+    // Convert Quaternion to Euler angles (roll, pitch, yaw)
+    double roll, pitch, yaw;
+    tf::Matrix3x3(tf::Quaternion(rot.x(), rot.y(), rot.z(), rot.w())).getRPY(roll, pitch, yaw);
+
+    // Define roll threshold (in radians)
+    const double rollThreshold = M_PI / 8;  // Example threshold: 45 degrees
+
+    // Only proceed if the roll value is below the threshold
+    if (fabs(roll) > rollThreshold) {
+        ROS_WARN_STREAM("Roll (" << roll << ") exceeds threshold. Skipping odometry update.");
+        return;
+    }
 
     SE3 odom = SE3();
     odom.setQuaternion(rot);

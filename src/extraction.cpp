@@ -58,7 +58,8 @@ namespace ext
       maxSeedZLimit_(0.5),
       minSeedPts_(10),
       nIterations_(10),
-      minInliers_(30),      
+      minInliers_(30), 
+    //   minRowInliers_(1000),       
       toleranceR_(0.02),
       min_z_addition_(0.15),
       max_z_addition_(0.20),
@@ -101,7 +102,7 @@ namespace ext
         // Downsample the input cloud to reduce the number of points
         pcl::VoxelGrid<PointT> sor;
         float leafSize = 0.15f; // Adjust this value based on the desired resolution
-        // float leafSize = 0.08f; // Adjust this value based on the desired resolution
+        // float leafSize = 0.01f; // Adjust this value based on the desired resolution
         sor.setInputCloud(inCloud);
         sor.setLeafSize(leafSize, leafSize, leafSize); // Set the voxel size (leaf size)
         CloudT::Ptr downsampledCloud(new CloudT);
@@ -166,14 +167,14 @@ namespace ext
     // Added downsampling function to reduce the computational latency of the system
     void Extraction::rowRansac(const CloudT::Ptr inCloud, CloudT::Ptr& outCloud_inlier, CloudT::Ptr& outCloud_outlier, pcl::ModelCoefficients::Ptr& groundCoefficients)
     {
-        // Downsample the input cloud to reduce the number of points
-        pcl::VoxelGrid<PointT> sor;
-        float leafSize = 0.01f; // Adjust this value based on the desired resolution
-        // float leafSize = 0.08f; // Adjust this value based on the desired resolution
-        sor.setInputCloud(inCloud);
-        sor.setLeafSize(leafSize, leafSize, leafSize); // Set the voxel size (leaf size)
-        CloudT::Ptr downsampledCloud(new CloudT);
-        sor.filter(*downsampledCloud);
+        // // Downsample the input cloud to reduce the number of points
+        // pcl::VoxelGrid<PointT> sor;
+        // float leafSize = 0.01f; // Adjust this value based on the desired resolution
+        // // float leafSize = 0.08f; // Adjust this value based on the desired resolution
+        // sor.setInputCloud(inCloud);
+        // sor.setLeafSize(leafSize, leafSize, leafSize); // Set the voxel size (leaf size)
+        // CloudT::Ptr downsampledCloud(new CloudT);
+        // sor.filter(*downsampledCloud);
         
         pcl::PointIndices inliers;
         pcl::ModelCoefficients groundCoeffs;
@@ -185,7 +186,8 @@ namespace ext
         seg.setModelType (pcl::SACMODEL_PLANE);
         seg.setMethodType (pcl::SAC_RANSAC);
         seg.setMaxIterations (ransacMaxIterations_);
-        seg.setInputCloud (downsampledCloud);
+        // seg.setInputCloud (downsampledCloud);
+        seg.setInputCloud (inCloud);
 
         // Set the distance threshold only once
         if (seg.getDistanceThreshold() != 0.06) {
@@ -200,32 +202,34 @@ namespace ext
 
             // cout << "!!!!!!!!!" << inliers.indices.size() << endl;
             // If enough inliers were found
-            if (inliers.indices.size () > minInliers_) {
-                // Extract the planar inliers from the input cloud
-                pcl::ExtractIndices<PointT> extract;
-                extract.setInputCloud(downsampledCloud);
-                extract.setIndices(boost::make_shared<pcl::PointIndices>(inliers));
-                extract.setNegative(false);
-                extract.filter(*outCloud_inlier);
+            // if (inliers.indices.size () > minRowInliers_) {
+            // Extract the planar inliers from the input cloud
+            pcl::ExtractIndices<PointT> extract;
+            // extract.setInputCloud(downsampledCloud);
+            extract.setInputCloud(inCloud);
+            extract.setIndices(boost::make_shared<pcl::PointIndices>(inliers));
+            extract.setNegative(false);
+            extract.filter(*outCloud_inlier);
 
-                extract.setNegative(true);
-                extract.filter(*outCloud_outlier);
+            extract.setNegative(true);
+            extract.filter(*outCloud_outlier);
 
-                // Update the ground coefficients
-                groundCoefficients = boost::make_shared<pcl::ModelCoefficients>(groundCoeffs);
+            // Update the ground coefficients
+            groundCoefficients = boost::make_shared<pcl::ModelCoefficients>(groundCoeffs);
 
-                // cout << "Model coefficients: " << groundCoefficients->values[0] << " " 
-                //                     << groundCoefficients->values[1] << " "
-                //                     << groundCoefficients->values[2] << " " 
-                //                     << groundCoefficients->values[3] << endl;
+            // cout << "Model coefficients: " << groundCoefficients->values[0] << " " 
+            //                     << groundCoefficients->values[1] << " "
+            //                     << groundCoefficients->values[2] << " " 
+            //                     << groundCoefficients->values[3] << endl;
 
-                return;
-            }
+            return;
+            // }
         }
 
         // No valid segmentation found
         outCloud_inlier->clear();
-        outCloud_outlier = downsampledCloud;
+        // outCloud_outlier = downsampledCloud;
+        outCloud_outlier = inCloud;
         groundCoefficients.reset(new pcl::ModelCoefficients);
         ROS_WARN("No valid segmentation found in %d iterations", nIterations_);
     }

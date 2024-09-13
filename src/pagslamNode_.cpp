@@ -91,7 +91,10 @@ namespace pagslam
         bool_ground_ = nh_.param("bool_ground_extraction", false);
         bool_row_ = nh_.param("bool_row_extraction", false);
         bool_stalk_ = nh_.param("bool_stalk_extraction", false);
-        
+
+        firstOdomOrientation_ = nh_.param("first_odom_orientation", 90.0  * (M_PI / 180));
+        minRowInliers_ = nh_.param("minimum_number_point_cloud", 500);
+
         tf_listener_.reset(new tf2_ros::TransformListener(tf_buffer_));
         
         initParams_();
@@ -958,6 +961,17 @@ namespace pagslam
         pass2.filter(*h_cloud2);
         pubRow2Cloud_.publish(h_cloud2);
 
+        // Count the number of points in h_cloud1/2 after filtering
+        int pointCount1 = h_cloud1->size();
+        std::cout << "Number of points in h_cloud1: " << pointCount1 << std::endl;
+        int pointCount2 = h_cloud2->size();
+        std::cout << "Number of points in h_cloud2: " << pointCount2 << std::endl;
+
+        if ((pointCount1 < minRowInliers_) ||(pointCount2 < minRowInliers_)){
+            cout << "Number of points is too low" << endl;
+            return false;
+        }
+
         // extractor_->ransac(h_cloud, rowCloud, rowCloud_outlier, rowCoefficients);
         extractor_->rowRansac(h_cloud1, row1Cloud, row1Cloud_outlier, row1Coefficients);
         extractor_->rowRansac(h_cloud2, row2Cloud, row2Cloud_outlier, row2Coefficients);
@@ -1008,6 +1022,10 @@ namespace pagslam
             cout << "row1 y intercept: " << row1_y_intercept << endl;
             cout << "row2 y intercept: " << row2_y_intercept << endl;
 
+            if (row1_y_intercept * row2_y_intercept > 0 && (max(abs(row1_y_intercept),abs(row2_y_intercept)) / min(abs(row1_y_intercept),abs(row2_y_intercept)) < 2.0)){
+                cout << "Rows are extracted from the same row" << endl;
+                return false;
+            }
               
             // // if (debugMode_){   
             // //     pubGroundCloud_.publish(pagslamIn.groundFeature.cloud);
@@ -1388,7 +1406,7 @@ namespace pagslam
 
         SE3 initialPose;
         Eigen::Vector3d translation(0, 0, 0);
-        Eigen::Quaterniond rotation(Eigen::AngleAxisd(float(0 * (M_PI / 180)), Eigen::Vector3d::UnitZ())); // 90 degrees around Z axis
+        Eigen::Quaterniond rotation(Eigen::AngleAxisd(firstOdomOrientation_, Eigen::Vector3d::UnitZ())); // 90 degrees around Z axis
         initialPose = SE3(rotation, translation);
         SE3 originalPoseEstimate = initialPose * odom.pose;
 
@@ -1454,10 +1472,10 @@ namespace pagslam
         bool_row_ = rowExtraction(h_cloud_tmp, twoRowsYRange, pagslamIn, initialGuess);
         // bool_ground_ = groundExtraction(h_cloud, pagslamIn, poseEstimate);
         
-        // if (!bool_ground_){
-        //     cout << "********" << endl;
-        //     return false;
-        // }
+        if (!bool_row_){
+            cout << "********" << endl;
+            return false;
+        }
 
         // (3) Stalk Extraction
         bool_stalk_ = stalkExtraction(v_cloud, pagslamIn);  

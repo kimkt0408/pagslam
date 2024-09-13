@@ -1030,7 +1030,7 @@ namespace pagslam
         ceres::CostFunction* cost;
         double rotation_angle = angleAxis.angle();
 
-        if (rotation_angle > M_PI / 4){
+        if (rotation_angle > M_PI / 3.0){
             cout << "Large rotation..." << endl;
             cost = new ceres::AutoDiffCostFunction<YawRowCost2, 1, 6>(
                         new YawRowCost2(scene_coeff, model_coeff, rotation_angle, weight));
