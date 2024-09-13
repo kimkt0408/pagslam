@@ -89,7 +89,7 @@ namespace ext
             geometry_msgs::Transform eigenToTransform(const Eigen::Isometry3d& transform_eigen);
             geometry_msgs::Transform multiplyTransforms(const geometry_msgs::Transform& t1, const geometry_msgs::Transform& t2);
             // void downsamplePointCloud(CloudT::Ptr cloud, float leafSize);
-    
+        
         private:
             int ransacMaxIterations_;       // Max iteration for ground feature extraction
             std::string robot_frame_id_;

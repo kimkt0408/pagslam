@@ -996,36 +996,51 @@ namespace pagslam
         bool_rowTransformFrame_ = transformFrame(h_lidar_frame_id_, robot_frame_id_, tf_rowSourceToTarget_);
         // bool_groundTransformFrame_ = transformFrame(robot_frame_id_, v_lidar_frame_id_, tf_groundSourceToTarget_);
         
+        float yaw1 = calculateYawFromNormal(row1Coefficients);
+        float yaw2 = calculateYawFromNormal(row2Coefficients);
+
+        // Convert to degrees if necessary
+        float yaw1_deg = yaw1 * 180.0 / M_PI;
+        float yaw2_deg = yaw2 * 180.0 / M_PI;
+
+        std::cout << "Yaw angle for row 1 (radians): " << yaw1 << " (degrees): " << yaw1_deg << std::endl;
+        std::cout << "Yaw angle for row 2 (radians): " << yaw2 << " (degrees): " << yaw2_deg << std::endl;
+
+        float row1_y_intercept = -row1Coefficients->values[3]/row1Coefficients->values[1];
+        float row2_y_intercept = -row2Coefficients->values[3]/row2Coefficients->values[1];
         
+        cout << "row1 y intercept: " << row1_y_intercept << endl;
+        cout << "row2 y intercept: " << row2_y_intercept << endl;
+
+        if (row1_y_intercept * row2_y_intercept > 0 && (max(abs(row1_y_intercept),abs(row2_y_intercept)) / min(abs(row1_y_intercept),abs(row2_y_intercept)) < 2.0)){
+            cout << "Rows are extracted from the same row" << endl;
+            return false;
+        }
 
         if (bool_rowTransformFrame_){
-            extractor_->transformRowPlane(tf_rowSourceToTarget_, row1Cloud, row2Cloud, row1Coefficients, row2Coefficients, pagslamIn, initialGuess);
+            bool useRow1 = (abs(abs(yaw1) - M_PI_2) < abs(abs(yaw2) - M_PI_2));
+
+            extractor_->transformRowPlane(
+                tf_rowSourceToTarget_,
+                useRow1 ? row1Cloud : row2Cloud, 
+                useRow1 ? row2Cloud : row1Cloud, 
+                useRow1 ? row1Coefficients : row2Coefficients, 
+                useRow1 ? row2Coefficients : row1Coefficients, 
+                pagslamIn, 
+                initialGuess
+            );
+            // if (abs(abs(yaw1)-M_PI_2) <  abs(abs(yaw2)-M_PI_2)){
+            //     extractor_->transformRowPlane(tf_rowSourceToTarget_, row1Cloud, row2Cloud, row1Coefficients, row2Coefficients, pagslamIn, initialGuess);
+            // }
+            // else{
+            //     extractor_->transformRowPlane(tf_rowSourceToTarget_, row2Cloud, row1Cloud, row2Coefficients, row1Coefficients, pagslamIn, initialGuess);
+            // }
+
             // extractor_->transformRowPlane(tf_rowSourceToTarget_, row2Cloud, pagslamIn, initialGuess);
 
             // // Construct normal vectors from the coefficients
             // Eigen::Vector3f normal1(row1Coefficients->values[0], row1Coefficients->values[1], row1Coefficients->values[2]);
             // Eigen::Vector3f normal2(row2Coefficients->values[0], row2Coefficients->values[1], row2Coefficients->values[2]);
-
-            float yaw1 = calculateYawFromNormal(row1Coefficients);
-            float yaw2 = calculateYawFromNormal(row2Coefficients);
-
-            // Convert to degrees if necessary
-            float yaw1_deg = yaw1 * 180.0 / M_PI;
-            float yaw2_deg = yaw2 * 180.0 / M_PI;
-
-            std::cout << "Yaw angle for row 1 (radians): " << yaw1 << " (degrees): " << yaw1_deg << std::endl;
-            std::cout << "Yaw angle for row 2 (radians): " << yaw2 << " (degrees): " << yaw2_deg << std::endl;
-
-            float row1_y_intercept = -row1Coefficients->values[3]/row1Coefficients->values[1];
-            float row2_y_intercept = -row2Coefficients->values[3]/row2Coefficients->values[1];
-            
-            cout << "row1 y intercept: " << row1_y_intercept << endl;
-            cout << "row2 y intercept: " << row2_y_intercept << endl;
-
-            if (row1_y_intercept * row2_y_intercept > 0 && (max(abs(row1_y_intercept),abs(row2_y_intercept)) / min(abs(row1_y_intercept),abs(row2_y_intercept)) < 2.0)){
-                cout << "Rows are extracted from the same row" << endl;
-                return false;
-            }
               
             // // if (debugMode_){   
             // //     pubGroundCloud_.publish(pagslamIn.groundFeature.cloud);
