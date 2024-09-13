@@ -325,59 +325,7 @@ bool InputManager::Run()
     return false;
 }
 
-
-// bool InputManager::callPAGSLAM(SE3 relativeMotion, ros::Time stamp)
-bool InputManager::callPAGSLAM(SE3 relativeMotion, StampedSE3 odom)
-{
-    CloudT::Ptr h_cloud(new CloudT);
-    CloudT::Ptr v_cloud(new CloudT);
-
-    auto r = FindPC(odom.stamp, h_cloud, v_cloud);
-
-    if (r == CLOUD_FOUND){
-        // SE3 keyPose = initialOdom;
-
-        // odomQueue_.pop_front();
-        SE3 keyPose = SE3();
-        // SE3 prevKeyPose = firstOdom_ ? SE3() : keyPoses_[keyPoses_.size() - 1];
-        
-        SE3 prevKeyPose;
-        if (firstOdom_) {
-            // Eigen::Vector3d translation(0, 0, 0);
-            // Eigen::Quaterniond rotation(Eigen::AngleAxisd(firstOdomOrientation_, Eigen::Vector3d::UnitZ())); // 90 degrees around Z axis
-            
-            auto initialOdom = odomQueue_.front();
-            prevKeyPose = initialOdom.pose;
-            std::cout << "initialOdom Pose matrix:\n" << prevKeyPose.matrix() << std::endl;
-        } else {
-            prevKeyPose = keyPoses_.back();
-        }
-
-        pcl_conversions::toPCL(odom.stamp, h_cloud->header.stamp);
-        pcl_conversions::toPCL(odom.stamp, v_cloud->header.stamp);
-        
-        
-        // std::cout << "relativeMotion matrix:\n" << relativeMotion.matrix() << std::endl;
-
-        bool success_ = pagslam_->run(relativeMotion, prevKeyPose, h_cloud, v_cloud, odom, keyPose);
-        if (success_){
-            keyPoses_.push_back(keyPose);
-            return true;
-        }
-
-        odomQueue_.pop_front();
-    }
-    else{
-        if (r == CLOUD_TOO_NEW){
-            odomQueue_.pop_front();
-        }
-
-        ROS_DEBUG_STREAM("Corresponding point cloud not found. Skipping.");
-    }
-    return false;
-}
-
-
+// For the rosbag files:  2024-08-21~
 // // bool InputManager::callPAGSLAM(SE3 relativeMotion, ros::Time stamp)
 // bool InputManager::callPAGSLAM(SE3 relativeMotion, StampedSE3 odom)
 // {
@@ -387,15 +335,20 @@ bool InputManager::callPAGSLAM(SE3 relativeMotion, StampedSE3 odom)
 //     auto r = FindPC(odom.stamp, h_cloud, v_cloud);
 
 //     if (r == CLOUD_FOUND){
-//         odomQueue_.pop_front();
+//         // SE3 keyPose = initialOdom;
+
+//         // odomQueue_.pop_front();
 //         SE3 keyPose = SE3();
 //         // SE3 prevKeyPose = firstOdom_ ? SE3() : keyPoses_[keyPoses_.size() - 1];
         
 //         SE3 prevKeyPose;
 //         if (firstOdom_) {
-//             Eigen::Vector3d translation(0, 0, 0);
-//             Eigen::Quaterniond rotation(Eigen::AngleAxisd(firstOdomOrientation_, Eigen::Vector3d::UnitZ())); // 90 degrees around Z axis
-//             prevKeyPose = SE3(rotation, translation);
+//             // Eigen::Vector3d translation(0, 0, 0);
+//             // Eigen::Quaterniond rotation(Eigen::AngleAxisd(firstOdomOrientation_, Eigen::Vector3d::UnitZ())); // 90 degrees around Z axis
+            
+//             auto initialOdom = odomQueue_.front();
+//             prevKeyPose = initialOdom.pose;
+//             std::cout << "initialOdom Pose matrix:\n" << prevKeyPose.matrix() << std::endl;
 //         } else {
 //             prevKeyPose = keyPoses_.back();
 //         }
@@ -403,7 +356,7 @@ bool InputManager::callPAGSLAM(SE3 relativeMotion, StampedSE3 odom)
 //         pcl_conversions::toPCL(odom.stamp, h_cloud->header.stamp);
 //         pcl_conversions::toPCL(odom.stamp, v_cloud->header.stamp);
         
-//         // std::cout << "prevKeyPose matrix:\n" << prevKeyPose.matrix() << std::endl;
+        
 //         // std::cout << "relativeMotion matrix:\n" << relativeMotion.matrix() << std::endl;
 
 //         bool success_ = pagslam_->run(relativeMotion, prevKeyPose, h_cloud, v_cloud, odom, keyPose);
@@ -411,6 +364,8 @@ bool InputManager::callPAGSLAM(SE3 relativeMotion, StampedSE3 odom)
 //             keyPoses_.push_back(keyPose);
 //             return true;
 //         }
+
+//         odomQueue_.pop_front();
 //     }
 //     else{
 //         if (r == CLOUD_TOO_NEW){
@@ -421,6 +376,52 @@ bool InputManager::callPAGSLAM(SE3 relativeMotion, StampedSE3 odom)
 //     }
 //     return false;
 // }
+
+
+// For the rosbag files: ~ 2024-08-21
+// bool InputManager::callPAGSLAM(SE3 relativeMotion, ros::Time stamp)
+bool InputManager::callPAGSLAM(SE3 relativeMotion, StampedSE3 odom)
+{
+    CloudT::Ptr h_cloud(new CloudT);
+    CloudT::Ptr v_cloud(new CloudT);
+
+    auto r = FindPC(odom.stamp, h_cloud, v_cloud);
+
+    if (r == CLOUD_FOUND){
+        odomQueue_.pop_front();
+        SE3 keyPose = SE3();
+        // SE3 prevKeyPose = firstOdom_ ? SE3() : keyPoses_[keyPoses_.size() - 1];
+        
+        SE3 prevKeyPose;
+        if (firstOdom_) {
+            Eigen::Vector3d translation(0, 0, 0);
+            Eigen::Quaterniond rotation(Eigen::AngleAxisd(firstOdomOrientation_, Eigen::Vector3d::UnitZ())); // 90 degrees around Z axis
+            prevKeyPose = SE3(rotation, translation);
+        } else {
+            prevKeyPose = keyPoses_.back();
+        }
+
+        pcl_conversions::toPCL(odom.stamp, h_cloud->header.stamp);
+        pcl_conversions::toPCL(odom.stamp, v_cloud->header.stamp);
+        
+        // std::cout << "prevKeyPose matrix:\n" << prevKeyPose.matrix() << std::endl;
+        // std::cout << "relativeMotion matrix:\n" << relativeMotion.matrix() << std::endl;
+
+        bool success_ = pagslam_->run(relativeMotion, prevKeyPose, h_cloud, v_cloud, odom, keyPose);
+        if (success_){
+            keyPoses_.push_back(keyPose);
+            return true;
+        }
+    }
+    else{
+        if (r == CLOUD_TOO_NEW){
+            odomQueue_.pop_front();
+        }
+
+        ROS_DEBUG_STREAM("Corresponding point cloud not found. Skipping.");
+    }
+    return false;
+}
 
 
 int InputManager::FindPC(const ros::Time stamp, CloudT::Ptr h_cloud, CloudT::Ptr v_cloud)
