@@ -60,7 +60,7 @@ roslaunch gtsam_test factorGraph.launch
 
 | Topic                  | Description                                          | ROS Message Type            |
 |------------------------|------------------------------------------------------|-----------------------------|
-| `/cmd_vel`             | Robot linear and angular velocity                        | `geometry_msgs/Twist`       |
+| `/cmd_vel`             | Robot linear and angular velocity                    | `geometry_msgs/Twist`       |
 | `/gps/fix`             | RTK GPS measurements                                 | `sensor_msgs/NavSatFix`     |
 | `/imu/data`            | Robot IMU data                                       | `sensor_msgs/Imu`           |
 | `/ns1/velodyne_points` | Point cloud from horizontal LiDAR `velodyne1`        | `sensor_msgs/PointCloud2`   |
@@ -72,11 +72,11 @@ Feel free to use [our cornfield dataset](https://github.com/kimkt0408/ACRE-Datas
 
 #### ROS Topic Outputs
 
-| Topic                  | Description                                          | ROS Message Type            |
-|------------------------|-----------------------------------------------------------|-----------------------------|
-| `/gtsam/optimized_pose_`             | Robot pose result from P-AgSLAM                       | `geometry_msgs::PoseStamped`       |
-| `/gtsam/trajectory_`             | Robot trajectory from P-AgSLAM                                  | `visualization_msgs::MarkerArray`     |
-| `/gtsam/mapCloud_`            | 3D point cloud map from P-AgSLAM                                      | `visualization_msgs::MarkerArray`           |
+| Topic                    | Description                                          | ROS Message Type                  |
+|--------------------------|------------------------------------------------------|-----------------------------------|
+| `/gtsam/optimized_pose_` | Robot pose result from P-AgSLAM                      | `geometry_msgs::PoseStamped`      |
+| `/gtsam/trajectory_`     | Robot trajectory from P-AgSLAM                       | `visualization_msgs::MarkerArray` |
+| `/gtsam/mapCloud_`       | 3D point cloud map from P-AgSLAM                     | `visualization_msgs::MarkerArray` |
 
 
 ## Citation
