@@ -72,11 +72,11 @@ Feel free to use [our cornfield dataset](https://github.com/kimkt0408/ACRE-Datas
 
 #### ROS Topic Outputs
 
-| Topic                    | Description                                          | ROS Message Type                  |
-|--------------------------|------------------------------------------------------|-----------------------------------|
-| `/gtsam/optimized_pose_` | Robot pose result from P-AgSLAM                      | `geometry_msgs::PoseStamped`      |
-| `/gtsam/trajectory_`     | Robot trajectory from P-AgSLAM                       | `visualization_msgs::MarkerArray` |
-| `/gtsam/mapCloud_`       | 3D point cloud map from P-AgSLAM                     | `visualization_msgs::MarkerArray` |
+| Topic                        | Description                            | ROS Message Type                  |
+|------------------------------|----------------------------------------|-----------------------------------|
+| `/gtsam/optimized_pose_`     | Robot pose result from P-AgSLAM        | `geometry_msgs::PoseStamped`      |
+| `/gtsam/trajectory_`         | Robot trajectory from P-AgSLAM         | `visualization_msgs::MarkerArray` |
+| `/gtsam/mapCloud_`           | 3D point cloud map from P-AgSLAM       | `visualization_msgs::MarkerArray` |
 
 
 ## Citation
