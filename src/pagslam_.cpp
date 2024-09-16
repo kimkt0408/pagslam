@@ -58,8 +58,8 @@ namespace pagslam
             // }
         }
 
-        projectGround(tf, in.row1Feature);
-        projectGround(tf, in.row2Feature);
+        projectRow(tf, in.row1Feature);
+        projectRow(tf, in.row2Feature);
     }
 
     // void pagslam::projectFeatures(const SE3 &tf, GroundFeature &ground, std::vector<StalkFeature::Ptr> &stalks){
@@ -75,6 +75,37 @@ namespace pagslam
     // }
 
 
+    void pagslam::projectRow(const SE3 &tf, GroundFeature &row){
+        Matrix4 tfm = tf.matrix().inverse().transpose();
+
+        // auto& cloud_points = row.cloud->points;
+        auto& coeffs_values = row.coefficients->values;
+
+        // for (auto& point : cloud_points) {
+        //     if (!std::isfinite(point.x) || !std::isfinite(point.y) || !std::isfinite(point.z)) {
+        //         continue;
+        //     }
+        //     Vector3 v(point.x, point.y, point.z);
+        //     v = tf * v;
+        //     point.x = v(0);
+        //     point.y = v(1);
+        //     point.z = v(2);
+        // }
+
+        Vector4 coefficients(coeffs_values[0], coeffs_values[1], coeffs_values[2], coeffs_values[3]);
+        VectorX transformedCoefficients = tfm * coefficients;
+        
+        cout << "Before: " << coefficients << endl;
+        cout << "After: " << transformedCoefficients << endl;
+        
+        coeffs_values[0] = transformedCoefficients(0);
+        coeffs_values[1] = transformedCoefficients(1);
+        coeffs_values[2] = transformedCoefficients(2);
+        coeffs_values[3] = transformedCoefficients(3);
+
+    }
+
+    
     void pagslam::projectGround(const SE3 &tf, GroundFeature &ground){
         Matrix4 tfm = tf.matrix().inverse().transpose();
 
@@ -1019,10 +1050,10 @@ namespace pagslam
             new ceres::SubsetParameterization(6, {0, 1, 2, 3, 4});
         problem.SetParameterization(params, subset_parameterization);
 
-        GroundFeature lastGroundFeature = mapRow1Features.back();
+        GroundFeature lastRow1Feature = mapRow1Features.back();
 
         Vector4 scene_coeff (currRow1Feature.coefficients->values[0], currRow1Feature.coefficients->values[1], currRow1Feature.coefficients->values[2], currRow1Feature.coefficients->values[3]);
-        Vector4 model_coeff (lastGroundFeature.coefficients->values[0], lastGroundFeature.coefficients->values[1], lastGroundFeature.coefficients->values[2], lastGroundFeature.coefficients->values[3]);
+        Vector4 model_coeff (lastRow1Feature.coefficients->values[0], lastRow1Feature.coefficients->values[1], lastRow1Feature.coefficients->values[2], lastRow1Feature.coefficients->values[3]);
         // Vector4 model_coeff (0.0, 0.0, 1.0, 0.0);
         cout << "CURR: " << scene_coeff << endl;
         cout << "PREV: " << model_coeff << endl;
@@ -1030,13 +1061,13 @@ namespace pagslam
         ceres::CostFunction* cost;
         double rotation_angle = angleAxis.angle();
         
-        if (rotation_angle > M_PI / 4.0){
+        if (abs(rotation_angle) > M_PI / 4.0){
             cout << "Large rotation..." << rotation_angle << endl;
             cost = new ceres::AutoDiffCostFunction<YawRowCost2, 1, 6>(
                         new YawRowCost2(scene_coeff, model_coeff, rotation_angle, weight));
         }
         else{
-            cout << "No rotation..." << endl;
+            cout << "No rotation..." << rotation_angle << endl;
             cost = new ceres::AutoDiffCostFunction<YawRowCost1, 1, 6>(
                             new YawRowCost1(scene_coeff, model_coeff, weight));
         }
@@ -1114,17 +1145,18 @@ namespace pagslam
         // For Dual LiDAR (Vertical/Horizontal LiDAR)
         // if (bool_dualLiDAR_){
         if (success){
-            if (abs(params[5]-rpy[2]) > 0.25 * M_PI){
-                out[0] = rpy[2];
-                ROS_DEBUG_STREAM("Yaw: NOT Optimized After " << out[0]); 
-            }
-            else{   
-                out[0] = params[5];
-                ROS_DEBUG_STREAM("Yaw: Optimized After " << out[0]); 
+            // if (abs(params[5]-rpy[2]) > 0.25 * M_PI){
+            //     out[0] = rpy[2];
+            //     // out[0] = params[5];
+            //     ROS_DEBUG_STREAM("Yaw: Success but NOT Optimized After " << rpy[2] << " " << params[5]); 
+            // }
+            // else{   
+            //     out[0] = params[5];
+            //     ROS_DEBUG_STREAM("Yaw: Optimized After " << out[0] << " " << rpy[2]); 
 
-            }
-            // out[0] = params[5];
-            // ROS_DEBUG_STREAM("Yaw: Optimized After " << out[0]); 
+            // }
+            out[0] = params[5];
+            ROS_DEBUG_STREAM("Yaw: Optimized After " << out[0] << " " << rpy[2]); 
             // // if(success & (abs(params[2]) < 1.0)){
             // if((abs(params[2]) < 1.0)){
             //     out = params[5];
@@ -1141,7 +1173,7 @@ namespace pagslam
         }
         else{
             out[0] = rpy[2];
-            ROS_DEBUG_STREAM("Yaw: NOT Optimized After " << out[0]); 
+            ROS_DEBUG_STREAM("Yaw: NOT Optimized After " << out[0] << " " << rpy[2]); 
         }
 
         // if (success){
@@ -1261,9 +1293,14 @@ namespace pagslam
             // }
 
             if (in_proj.groundFeature.cloud->size() != 0 && in_proj.stalkFeatures.size() != 0 && in_proj.row1Feature.cloud->size() != 0 && in_proj.row2Feature.cloud->size() != 0){
-                prevGroundFeatures_.push_back(in_proj.groundFeature);
-                prevRow1Features_.push_back(in_proj.row1Feature);
-                prevRow1Features_.push_back(in_proj.row2Feature);
+                projectFeatures(out.T_Map_Curr, in_final);
+
+                // prevGroundFeatures_.push_back(in_proj.groundFeature);
+                // prevRow1Features_.push_back(in_proj.row1Feature);
+                // prevRow1Features_.push_back(in_proj.row2Feature);
+                prevGroundFeatures_.push_back(in_final.groundFeature);
+                prevRow1Features_.push_back(in_final.row1Feature);
+                prevRow1Features_.push_back(in_final.row2Feature);
                 firstScan_ = false;
             }
         }
@@ -1346,10 +1383,10 @@ namespace pagslam
             matchFeatures(in_final.stalkFeatures, in.mapStalkFeatures, matchIndices);
 
             // cout << "4!!!!!!" << in.mapStalkFeatures.size() << " " << in_proj.mapStalkFeatures.size() << endl;
-            cout << "To NEXT: " << in_final.row1Feature.coefficients->values[0] << " " << 
-            in_final.row1Feature.coefficients->values[1] << " " << 
-            in_final.row1Feature.coefficients->values[2] << " " << 
-            in_final.row1Feature.coefficients->values[3] << endl;
+            // cout << "To NEXT: " << in_final.row1Feature.coefficients->values[0] << " " << 
+            // in_final.row1Feature.coefficients->values[1] << " " << 
+            // in_final.row1Feature.coefficients->values[2] << " " << 
+            // in_final.row1Feature.coefficients->values[3] << endl;
             
             prevGroundFeatures_.push_back(in_final.groundFeature);
             prevRow1Features_.push_back(in_final.row1Feature);

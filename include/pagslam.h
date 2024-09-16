@@ -103,6 +103,8 @@ namespace pagslam
             // void projectFeatures(const SE3 &tf, GroundFeature &ground, std::vector<StalkFeature::Ptr> &stalks);
             void projectFeatures(const SE3 &tf, PagslamInput &in);
             void projectGround(const SE3 &tf, GroundFeature &ground);
+            void projectRow(const SE3 &tf, GroundFeature &row);
+            
             // void projectStalk(const SE3 &tf, StalkFeature::Ptr &stalk);
             // void projectStalk(const SE3 &tf, StalkFeature::Ptr &stalk, bool firstStalk);
             void projectStalk(const SE3 &tf, StalkFeature::Ptr &stalk);

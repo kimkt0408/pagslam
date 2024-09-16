@@ -110,7 +110,7 @@ InputManager::InputManager(ros::NodeHandle nh) : nh_(nh), tf_listener_{tf_buffer
     // nh_.param<float>("max_time_difference", maxTimeDifference_, 0.05); //0.05
     
     // Test: 2024-08
-    nh_.param<float>("min_odom_distance", minOdomDistance_, 0.1); //0.05
+    nh_.param<float>("min_odom_distance", minOdomDistance_, 0.05); //0.05
     nh_.param<float>("max_time_difference", maxTimeDifference_, 0.05); //0.05
 
     odomFreqFilter_ = nh_.param("odom_freq_filter", 1);
@@ -121,7 +121,7 @@ InputManager::InputManager(ros::NodeHandle nh) : nh_(nh), tf_listener_{tf_buffer
 
     publishTf_ = nh_.param("publish_tf", true);
 
-    nh_.param<float>("first_odom_orientation", firstOdomOrientation_, 90 * (M_PI / 180)); //0.1, 0.05
+    nh_.param<float>("first_odom_orientation", firstOdomOrientation_, -90 * (M_PI / 180)); //0.1, 0.05
 
     nh_.param<std::string>("robot_frame_id", robot_frame_id_, "base_link");
     nh_.param<std::string>("odom_frame_id", odom_frame_id_, "odom");
