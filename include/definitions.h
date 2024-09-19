@@ -482,7 +482,7 @@ struct YawRowCost1 {
         if (angle_diff > T(M_PI_2)){
             angle_diff -= T(M_PI);
         }
-        
+
         // Adjust the angle difference to be within the range [-pi, pi]
         // if (angle_diff > T(2.0 * M_PI)) {
         //     angle_diff -= T(2.0 * M_PI);
@@ -560,7 +560,13 @@ struct YawRowCost2 {
         T angle_diff = ceres::abs((rotated_scene_yaw + M_PI_2) - model_yaw);
 
         // Adjust the angle difference to be within the range [-pi, pi]
-        if (angle_diff > T(M_PI)){
+        // if (angle_diff > T(M_PI)){
+        //     angle_diff -= T(M_PI);
+        // }
+        
+        cout << "Yaw Optimizing: scene / model: " << angle_diff << " " << scene_yaw << " " << rotated_scene_yaw << " " << model_yaw << endl;
+        
+        if (angle_diff > T(M_PI_2)){
             angle_diff -= T(M_PI);
         }
 
@@ -571,7 +577,7 @@ struct YawRowCost2 {
         cout << "Large rotation..." << angle_diff << " " << rotation_angle << 
         " " << params[3] << " " << params[4] << " " << params[5] << endl;
 
-        cout << "Yaw Optimizing: scene / model: " << scene_yaw << " " << rotated_scene_yaw << " " << model_yaw << endl;
+        // cout << "Yaw Optimizing: scene / model: " << scene_yaw << " " << rotated_scene_yaw << " " << model_yaw << endl;
         
         // Set the residual to the absolute angle difference
         residuals[0] = T(weight) * ceres::abs(angle_diff);

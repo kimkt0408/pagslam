@@ -92,7 +92,7 @@ namespace pagslam
         bool_row_ = nh_.param("bool_row_extraction", false);
         bool_stalk_ = nh_.param("bool_stalk_extraction", false);
 
-        firstOdomOrientation_ = nh_.param("first_odom_orientation", -90.0  * (M_PI / 180));
+        firstOdomOrientation_ = nh_.param("first_odom_orientation", 90.0  * (M_PI / 180));
         minRowInliers_ = nh_.param("minimum_number_point_cloud", 1000);  // Default: 500
 
         tf_listener_.reset(new tf2_ros::TransformListener(tf_buffer_));
