@@ -61,7 +61,14 @@
     <!-- <arg name="bagfile_abs_path"   value="/home/kimkt0408/bagfiles/2024-07-08-09-27-20.bag" /> -->
 
     <!-- P-AgSLAM + P-AgNav: Gazebo test -->
-    <arg name="bagfile_abs_path"   value="/media/kimkt0408/T7\ Shield/IoT4Ag/bagfiles/2024-09-23-11-51-24.bag" />
+    <!-- <arg name="bagfile_abs_path"   value="/media/kimkt0408/T7\ Shield/IoT4Ag/bagfiles/2024-09-23-11-51-24.bag" /> -->
+
+    <!-- P-AgSLAM + P-AgNav: HLAB test -->
+    <!-- <arg name="bagfile_abs_path"   value="/media/kimkt0408/T7\ Shield/IoT4Ag/bagfiles/2024-10-03-15-10-10.bag" /> -->
+
+    <!-- P-AgSLAM + P-AgNav: ACRE test -->
+    <arg name="bagfile_abs_path"   value="/media/kimkt0408/T7\ Shield/IoT4Ag/bagfiles/2024-10-04-10-17-56.bag" />
+    <!-- <arg name="bagfile_abs_path"   value="/media/kimkt0408/T7\ Shield/IoT4Ag/bagfiles/2024-10-04-10-45-37.bag" /> -->
      
     <!-- rosbag play -->
     <!-- <param name="/use_sim_time" value="true" /> -->
@@ -74,7 +81,10 @@
     <!-- <arg name="rviz"   value="/home/kimkt0408/rviz/gtsam.rviz" />  -->
     <!-- <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rviz)" /> -->
 
+    <!-- Yaw offset calculation -->
+    <!-- <node pkg="gps" type="yaw_offset_calculation.py" name="yaw_offset_calculation" output="screen" /> -->
+
     <!-- static_transform_publisher -->
     <node pkg="tf2_ros" type="static_transform_publisher" name="base_to_velodyne1" args="-0.155 0 0.402 -3.141592653 0 0 base_link velodyne1" />
-    <node pkg="tf2_ros" type="static_transform_publisher" name="base_to_velodyne2" args="-0.266 0 0.292 1.570796327 0 -1.570796327 base_link velodyne2" />
+    <node pkg="tf2_ros" type="static_transform_publisher" name="base_to_velodyne2" args="-0.266 0 0.292 1.570796327 0 -1.570796327 base_link velodyne2" /> 
 </launch>
